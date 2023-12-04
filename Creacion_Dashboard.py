@@ -57,8 +57,9 @@ if selected_tab == "1- Por fecha.":
     workbook = openpyxl.load_workbook(direc)
     sheet_names = []# Lista que almacenará los nombres de las hojas
     for sheet in workbook.sheetnames:# Recorre todas las hojas del libro
-        if sheet != "SELECTORES" or sheet !="PLANTILLA":
-            sheet_names.append(sheet)
+        if sheet != "SELECTORES":
+            if sheet != "PLANTILLA":
+                sheet_names.append(sheet)
     workbook.close()# Cierra el libro
     print(sheet_names) #Lista que almacena el nombre de las hojas del excel
 
