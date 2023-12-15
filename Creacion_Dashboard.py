@@ -33,6 +33,8 @@ selected_columns = ['AMT',
                     'Rpta actual',
                     'Comunicación actual']
 
+lista_recloser=["NOJA","NOJA Power","Schneider","JinkWang","ENTEC","S&C","ABB","SEL"] #Lista de recloser aptos
+
 #********************************************************************************************************
 # 3° Nombres de la página web.
 st.set_page_config(page_title = title_page_web, #Nombre de la pagina, sale arriba cuando se carga streamlit
@@ -241,9 +243,8 @@ if selected_tab == "1- Por fecha.":
     si_comunicacion = filtered_df['Comunicación actual'].value_counts().get('Si', 0)
     no_comunicacion = si_rpta-si_comunicacion
 
-    # Impresión de KPIs
+    # Impresión de KPIs => Conteo del total de recloser
         # CONTEO DE RECLOSER APTOS
-    lista_recloser=["NOJA","NOJA Power","Schneider","JinkWang","ENTEC","S&C","ABB","SEL"]
     conteos_marcas = df['MARCA'].value_counts().reset_index()
 
     conteos_marcas = conteos_marcas[conteos_marcas['MARCA'].isin(lista_recloser)]
@@ -251,38 +252,23 @@ if selected_tab == "1- Por fecha.":
     nuevos_nombres = {"MARCA": "Marca", "count": "Total"}
     conteos_marcas.rename(columns=nuevos_nombres, inplace=True)
 
-    no_conteo_SC = df.loc[df['MARCA'] == 'S&C', 'SECC.GIS NUEVO'].eq("--").sum()
-    conteo_ABB=df.loc[df['MARCA']=='ABB','CONTROLADOR'].eq("PCD2000R").sum()
+    conteo_SC = df.loc[df['MARCA'] == 'S&C', 'SECC.GIS NUEVO'].ne("--").sum() #Elementos que no son "--"
+    conteo_ABB=df.loc[df['MARCA']=='ABB','CONTROLADOR'].eq("PCD2000R").sum()  #Elementos que son "PCD2000R"
     conteo_SEL=df.loc[df['MARCA']=='SEL','CONTROLADOR'].eq("SEL-351R").sum()
-
-    total_SC = conteos_marcas.loc[conteos_marcas['Marca'] == 'S&C', 'Total'].values[0]
-    total_ABB = conteos_marcas.loc[conteos_marcas['Marca'] == 'ABB', 'Total'].values[0]
 
     total_NOJA = conteos_marcas.loc[conteos_marcas['Marca'] == 'NOJA', 'Total'].values[0]
     total_NOJA_Power = conteos_marcas.loc[conteos_marcas['Marca'] == 'NOJA Power', 'Total'].values[0]
 
-    conteos_marcas.loc[conteos_marcas['Marca'] == 'S&C', 'Total']=total_SC-no_conteo_SC
+    conteos_marcas.loc[conteos_marcas['Marca'] == 'S&C', 'Total']=conteo_SC
     conteos_marcas.loc[conteos_marcas['Marca'] == 'ABB', 'Total']=conteo_ABB
     conteos_marcas.loc[conteos_marcas['Marca'] == 'SEL', 'Total']=conteo_SEL
     conteos_marcas.loc[conteos_marcas['Marca'] == 'NOJA', 'Total']=total_NOJA+total_NOJA_Power
 
-    conteos_marcas.drop(conteos_marcas[conteos_marcas['Marca'] == 'NOJA Power'].index, inplace=True)
+    conteos_marcas.drop(conteos_marcas[conteos_marcas['Marca'] == 'NOJA Power'].index, inplace=True) #Eliminar la fila Noja Power
     conteos_marcas = conteos_marcas.sort_values(by='Total', ascending=False) # Ordenar en base al número de recloser con respuesta.
 
     total_recloser=conteos_marcas['Total'].sum()
-    st.markdown(f"<p style='font-size: 24px; text-align: center; font-weight: bold;'>Recloser instalados: {total_recloser}</p>", unsafe_allow_html=True)
-
-    left_column, right_column = st.columns(2)
-
-    with left_column:
-        st.markdown(f"<p style='font-size: 22px'>Tienen respuesta: {si_rpta}</p>", unsafe_allow_html=True)
-        st.markdown(f"<p style='font-size: 18px'>     - Tienen comunicación: {si_comunicacion}</p>", unsafe_allow_html=True)
-        st.markdown(f"<p style='font-size: 18px'>     - No tienen comunicación: {no_comunicacion}</p>", unsafe_allow_html=True)
-
-    with right_column:
-        if si_rpta==0:
-            si_rpta=total_recloser
-        st.markdown(f"<p style='font-size: 22px;  text-align: Right'>No tienen respuesta: {total_recloser-si_rpta}</p>", unsafe_allow_html=True)            
+    st.markdown(f"<p style='font-size: 34px; text-align: center; font-weight: bold;'>Recloser instalados: {total_recloser}</p>", unsafe_allow_html=True)
 
     # 6° Guardar el gráfico de barras en la siguiente variable
     try:
@@ -292,7 +278,7 @@ if selected_tab == "1- Por fecha.":
         col1,col2=st.columns((2)) #Creación arreglo de gráficas (1x2)
             # 6.1.1° Recloser instalados por marcas.  
         with col1:
-            st.subheader("Recloser por marca")
+            st.subheader("Total de recloser por marca")
             fig = px.bar(conteos_marcas, x="Marca", y="Total",
                         text=['{:,.0f} und.'.format(x) for x in conteos_marcas["Total"]],
                         template="seaborn")
@@ -303,86 +289,162 @@ if selected_tab == "1- Por fecha.":
 
             # 6.1.2° Agrupar por 'UNIDAD DE NEGOCIO' => "Nro de recloser instalados"----------------->DIAGRAMA DE PASTEL
         with col2:
-            st.markdown(f"<p style='font-size: 20px; text-align: center; font-weight: bold;'>Porcentaje de recloser instalados por Unidad de Negocio</p>\n", unsafe_allow_html=True)
-                # Agregar una nueva columna 'Contador de "Si"'
-            filtered_df_UN['Recloser con respuesta'] = filtered_df_UN['Rpta actual'].apply(lambda x: x.count('Si'))
-            filtered_df_UN['Recloser sin respuesta'] = filtered_df_UN['Rpta actual'].apply(lambda x: x.count('No'))
-            filtered_df_UN['Recloser con comunicación'] = filtered_df_UN['Comunicación actual'].apply(lambda x: x.count('Si'))
-            filtered_df_UN['Recloser sin comunicación'] = filtered_df_UN['Comunicación actual'].apply(lambda x: x.count('No'))
-
-                # Agrupar y sumar los valores
-            grouped_2 = filtered_df_UN.groupby('UNIDAD DE NEGOCIO').agg({
-                'UNIDAD DE NEGOCIO': 'first',  # Añadir la primera columna
-                'Recloser con respuesta': 'sum',
-                'Recloser sin respuesta': 'sum',
-                'Recloser con comunicación': 'sum',
-                'Recloser sin comunicación': 'sum'
-            })
-
-                # Calcular el número de Recloser instalados en cada UNIDAD DE NEGOCIO
-            grouped_2['Recloser instalados'] = filtered_df_UN['UNIDAD DE NEGOCIO'].value_counts().reindex(grouped_2.index)
-            
-                # Crear el diagrama de pastel
-            grouped_2 = grouped_2.sort_values(by='Recloser instalados', ascending=False) # Ordenar en base al número de recloser con respuesta.
-
+            st.subheader("Porentaje de recloser por marca")
             # 1° FORMA
                 # GRAFICAR
-            fig=px.pie(grouped_2,values='Recloser instalados',hole=0.5)
-            fig.update_traces(text=grouped_2['UNIDAD DE NEGOCIO'], textposition='outside',textfont_size=15)
+            fig=px.pie(conteos_marcas,values='Total',hole=0.5)
+            fig.update_traces(text=conteos_marcas['Marca'], textposition='outside',textfont_size=15)
             st.plotly_chart(fig,use_container_width=True)
-     
-            # # # # 2° FORMA ("CONVENCIONAL")
-            # # # fig, ax = plt.subplots(figsize=(4, 4))
-            # # # ax.pie(
-            # # #     grouped_2['Recloser instalados'],
-            # # #     labels=None,  # No mostrar etiquetas
-            # # #     startangle=90,
-            # # #     rotatelabels=False,
-            # # #     pctdistance=0.65
-            # # # )
-
-            # # # ax.axis('equal')
-
-            # # # # Crear una leyenda personalizada
-            # # # total_valores =  grouped_2['Recloser instalados'].sum()
-            # # # encabezados = grouped_2.columns.tolist()
-            # # # legend_labels = [f'{label} ({value/total_valores*100:.1f}%)' for label, value in zip(grouped_2['UNIDAD DE NEGOCIO'], grouped_2['Recloser instalados'])]
-            # # # legend_handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='C{}'.format(i), markersize=10) for i in range(len(legend_labels))]
-            # # # ax.legend(legend_handles, legend_labels, title="Porcentaje (%)", loc="center left", bbox_to_anchor=(1, 0.5))
-
-            # # # # Mostrar el gráfico en Streamlit
-            # # # st.pyplot(fig)
-
-            # # # # Imprimir tabla
-            # # # grouped_2.reset_index(drop=True, inplace=True)
-            # # # grouped_2.index=grouped_2.index + 1 #Hacer que primera fila no sea "0"
-            # # # st.dataframe(grouped_2, use_container_width=True)  # Muestra la tabla debajo del gráfico
 
         # 6.2° Creación de tablas
-            # 6.2.1: Creación de la tabla del diagrama de barras (Recloser por Marca)
-        with col1:
+            # 6.2.1: Creación de la tabla de los diagramas
             conteos_marcas.reset_index(drop=True, inplace=True)
+            conteos_marcas['Porcentaje (%)']=round(conteos_marcas['Total']/total_recloser*100,2)
             conteos_marcas.index = conteos_marcas.index + 1  # Hacer que la primera fila no sea "0"
-            with st.expander("Marca_ViewData"):
-                st.write(conteos_marcas)
+            with col1:
+                with st.expander("Marca_ViewData"):
+                    st.write(conteos_marcas)
+                    # # st.write(conteos_marcas.style.background_gradient(cmap="Greens"))# Imprimir la tabla.
+                    # Descargar la tabla en formato csv
+                    csvMarca = conteos_marcas.to_csv(index=False).encode('utf-8')  # Corregir aquí
+                    st.download_button("Download Data", data=csvMarca, file_name="Marca-DATA.csv", mime="text/csv")
+
+
+
+        st.markdown("---") #separador
+        #**********************************************************************************************************************************************************
+        #6.3° Recloser con respuesta/comunicación
+        lista_elementos_rpta=list()
+        lista_elementos_com=list()
+
+        columnas_elementos_rpta=["MARCA","Total","Si rpta","No rpta"]
+        columnas_elementos_com=["MARCA","Si rpta","Si comunicación","No comunicación"]
+        
+        #lista_recloser=["NOJA","NOJA Power","Schneider","JinkWang","ENTEC","S&C","ABB","SEL"] #Lista de recloser aptos
+
+        for elemento_com in lista_recloser:
+            lista_aux_respuesta,lista_aux_comunicaion=list(),list()
+            
+            if elemento_com=="S&C":
+                # Contar los elementos que digan "Si" en la columna "Rpta actual" en base al filtro ["MARCA","Rpta actual","SECC.GIS NUEVO"].
+                si_respuesta = df.loc[(df['MARCA'] == elemento_com) & (df['Rpta actual'] == 'Si') & (df['SECC.GIS NUEVO'] != '--'), 'Rpta actual'].count()
+                no_respuesta = df.loc[(df['MARCA'] == elemento_com) & (df['Rpta actual'] == 'No') & (df['SECC.GIS NUEVO'] != '--'), 'Rpta actual'].count()
+                no_com = df.loc[(df['MARCA'] == elemento_com) & (df['Rpta actual'] == 'Si') & (df['Comunicación actual'] == 'No') &  (df['SECC.GIS NUEVO'] != '--'), 'Comunicación actual'].count()
+            
+            elif elemento_com=="ABB":
+                si_respuesta = df.loc[(df['MARCA'] == elemento_com) & (df['Rpta actual'] == 'Si') & (df['CONTROLADOR'] == 'PCD2000R'), 'Rpta actual'].count()
+                no_respuesta = df.loc[(df['MARCA'] == elemento_com) & (df['Rpta actual'] == 'No') & (df['CONTROLADOR'] == 'PCD2000R'), 'Rpta actual'].count()
+                no_com = df.loc[(df['MARCA'] == elemento_com) & (df['Rpta actual'] == 'Si') & (df['Comunicación actual'] == 'No') & (df['CONTROLADOR'] == 'PCD2000R'), 'Comunicación actual'].count()
+                   
+            elif elemento_com=="SEL":
+                si_respuesta = df.loc[(df['MARCA'] == elemento_com) & (df['Rpta actual'] == 'Si') & (df['CONTROLADOR'] == 'SEL-351R'), 'Rpta actual'].count()
+                no_respuesta = df.loc[(df['MARCA'] == elemento_com) & (df['Rpta actual'] == 'No') & (df['CONTROLADOR'] == 'SEL-351R'), 'Rpta actual'].count()
+                no_com = df.loc[(df['MARCA'] == elemento_com) & (df['Rpta actual'] == 'Si') & (df['Comunicación actual'] == 'No') & (df['CONTROLADOR'] == 'SEL-351R'), 'Comunicación actual'].count()
+            
+            else: # Para los demas recloser
+                si_respuesta=df.loc[df['MARCA'] == elemento_com, 'Rpta actual'].eq("Si").sum()
+                no_respuesta=df.loc[df['MARCA'] == elemento_com, 'Rpta actual'].eq("No").sum()
+                no_com=df.loc[(df['MARCA'] == elemento_com) & (df['Rpta actual'] == 'Si') , 'Comunicación actual'].eq("No").sum()
+            
+            si_com=si_respuesta-no_com
+            total=si_respuesta+no_respuesta
+
+            lista_aux_respuesta=[elemento_com,total,si_respuesta,no_respuesta]
+            lista_aux_comunicaion=[elemento_com,si_respuesta,si_com,no_com]
+            
+            lista_elementos_rpta.append(lista_aux_respuesta)
+            lista_elementos_com.append(lista_aux_comunicaion)
+
+        df_RPTA = pd.DataFrame(lista_elementos_rpta, columns=columnas_elementos_rpta) # Convertir la lista anilada en un dataframe.
+        df_COM = pd.DataFrame(lista_elementos_com, columns=columnas_elementos_com) # Convertir la lista anilada en un dataframe.
+
+        df_RPTA.iloc[0, 1:] = df_RPTA.iloc[0, 1:] + df_RPTA.iloc[1, 1:] # Sumar los valores de la columna "NOJA" y "NOJA Power"
+        df_COM.iloc[0, 1:] = df_COM.iloc[0, 1:] + df_COM.iloc[1, 1:] # Sumar los valores de la columna "NOJA" y "NOJA Power"
+
+        df_RPTA = df_RPTA[df_RPTA['MARCA'] != 'NOJA Power'] # Eliminar la fila Noja Power
+        df_COM = df_COM[df_COM['MARCA'] != 'NOJA Power'] # Eliminar la fila Noja Power
+        
+        df_RPTA = df_RPTA.reset_index(drop=True) # Reinicio de índices
+        df_COM = df_COM.reset_index(drop=True) # Reinicio de índices
+
+        df_RPTA = df_RPTA.sort_values(by='Total', ascending=False) # Ordenar en base al número de recloser con respuesta.
+        df_COM = df_COM.sort_values(by='Si rpta', ascending=False) # Ordenar en base al número de recloser con respuesta.
+
+        
+        # Gráfico de pastel, con el número de recloser con respuesta y comunicación.
+        left_column, right_column = st.columns(2)
+        si_rpta_total,no_rpta_total=df_RPTA['Si rpta'].sum(),df_RPTA['No rpta'].sum()
+        si_com_total,no_com_total=df_COM['Si comunicación'].sum(),df_COM['No comunicación'].sum()
+
+        diccionario_respuesta={
+            "Tienen respuesta":si_rpta_total,
+            "No tienen respuesta":no_rpta_total
+        }
+        diccionario_comunicacion={
+            "Tienen comunicacion":si_com_total,
+            "No tienen comunicacion":no_com_total
+        }
+        with left_column:
+        
+            st.markdown(f"<p style='font-size: 22px; text-align: Center'>Respuesta de recloser: {si_rpta_total}/{si_rpta_total+no_rpta_total}</p>", unsafe_allow_html=True)            
+            df_respuesta = pd.DataFrame(list(diccionario_respuesta.items()), columns=['Etiqueta', 'Valor'])
+            fig = px.pie(df_respuesta, values='Valor', hole=0, names=df_respuesta['Etiqueta'])  # Usa 'names' en lugar de 'labels'
+            fig.update_traces(textinfo='value', hoverinfo='label+value',textfont_size=30)  # Muestra los valores y etiquetas en el hover
+            st.plotly_chart(fig, use_container_width=True)
+
+
+        with right_column:
+            st.markdown(f"<p style='font-size: 22px;  text-align: Center'>Comunicación de recloser: {si_com_total}/{si_rpta_total}</p>", unsafe_allow_html=True)
+            df_comunication = pd.DataFrame(list(diccionario_comunicacion.items()), columns=['Etiqueta', 'Valor'])
+            fig = px.pie(df_comunication, values='Valor', hole=0, names=df_comunication['Etiqueta'])  # Usa 'names' en lugar de 'labels'
+            fig.update_traces(textinfo='value', hoverinfo='label+value',textfont_size=30)  # Muestra los valores y etiquetas en el hover
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Creación de tablas
+        with left_column:
+            with st.expander("Rpta_ViewData"):
+                st.write(df_RPTA)
                 # # st.write(conteos_marcas.style.background_gradient(cmap="Greens"))# Imprimir la tabla.
                 # Descargar la tabla en formato csv
-                csvMarca = conteos_marcas.to_csv(index=False).encode('utf-8')  # Corregir aquí
-                st.download_button("Download Data", data=csvMarca, file_name="Marca-DATA.csv", mime="text/csv")
-            # 6.2.2: Creación de la tabla del diagrama de pastel (Recloser por UN)
-        with col2:
-            grouped_2.reset_index(drop=True)
-            grouped_2=grouped_2.drop(columns=['UNIDAD DE NEGOCIO']) #Eliminar la columna, unidad de negocio
-            with st.expander("Unidad de negocio_ViewData"):
-                st.write(grouped_2)
-                # # st.write(grouped_2.style.background_gradient(cmap="Greens"))# Imprimir la tabla.
+                csvRPTA = df_RPTA.to_csv(index=False).encode('utf-8')  # Corregir aquí
+                st.download_button("Download Data", data=csvRPTA, file_name="RPTA-DATA.csv", mime="text/csv")
+
+        with right_column:
+            with st.expander("Com_ViewData"):
+                st.write(df_COM)
+                # # st.write(conteos_marcas.style.background_gradient(cmap="Greens"))# Imprimir la tabla.
                 # Descargar la tabla en formato csv
-                csvUN = grouped_2.to_csv(index=False).encode('utf-8')  # Corregir aquí
-                st.download_button("Download Data", data=csvUN, file_name="Unidad_Negocio-DATA.csv", mime="text/csv")
+                csvCOM = df_COM.to_csv(index=False).encode('utf-8')  # Corregir aquí
+                st.download_button("Download Data", data=csvCOM, file_name="COM-DATA.csv", mime="text/csv")
 
         #******************************************************************************************************************************************************************************************************************
         #******************************************************************************************************************************************************************************************************************
+        #6.2° RECLOSER POR UNIDAD DE NEGOCIO
+            # Agregar una nueva columna 'Contador de "Si"'
+        filtered_df_UN['Recloser con respuesta'] = filtered_df_UN['Rpta actual'].apply(lambda x: x.count('Si'))
+        filtered_df_UN['Recloser sin respuesta'] = filtered_df_UN['Rpta actual'].apply(lambda x: x.count('No'))
+        filtered_df_UN['Recloser con comunicación'] = filtered_df_UN['Comunicación actual'].apply(lambda x: x.count('Si'))
+        filtered_df_UN['Recloser sin comunicación'] = filtered_df_UN['Comunicación actual'].apply(lambda x: x.count('No'))
 
+            # Agrupar y sumar los valores
+        grouped_2 = filtered_df_UN.groupby('UNIDAD DE NEGOCIO').agg({
+            'UNIDAD DE NEGOCIO': 'first',  # Añadir la primera columna
+            'Recloser con respuesta': 'sum',
+            'Recloser sin respuesta': 'sum',
+            'Recloser con comunicación': 'sum',
+            'Recloser sin comunicación': 'sum'
+        })
+
+            # Calcular el número de Recloser instalados en cada UNIDAD DE NEGOCIO
+        grouped_2['Recloser instalados'] = filtered_df_UN['UNIDAD DE NEGOCIO'].value_counts().reindex(grouped_2.index)
+        
+            # Crear el diagrama de pastel
+        grouped_2 = grouped_2.sort_values(by='Recloser instalados', ascending=False) # Ordenar en base al número de recloser con respuesta.
+
+
+
+#******************************************************************************************************************************************************************************************************************
+#******************************************************************************************************************************************************************************************************************
         # 6.2° Agrupar por 'SUBESTACIÓN' => "Nro de respuestas y comunicación de los recloser"----------------->DIAGRAMA DE BARRAS EN HORIZONTAL
         st.markdown("---") #separador
         # Agregar una nueva columna 'Contador de "Si"'
