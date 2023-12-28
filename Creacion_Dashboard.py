@@ -65,19 +65,7 @@ col1.subheader("_Elaborado por_: :blue[S.D.C.A] 👷")#, divider='rainbow')
 imagen_path = "imagen.jpg"  # Ajusta la ruta de la imagen según sea necesario
 col2.image(imagen_path, use_column_width=True)
 
-
-st.markdown('##')
-
-# URL de Google Maps
-st.markdown('##')
-url_input = "https://www.google.com/maps/d/u/0/viewer?mid=1jDCOXn4Su3ub1LHtoZyHbpffU_0ZwdA&ll=-11.344651744765466%2C-73.25285471281072&z=7"
-
-col1, col2, col3 = st.columns([1.3, 1, 1]) #Centrar el botón
-with col2:
-    if st.button("Ubicación en Google Maps"):
-        webbrowser.open(url_input, new=2)
-
-st.markdown('##') #Para separar el titulo de los KPIs, se inserta un paragrafo usando un campo de markdown
+st.markdown('---') #Para separar el titulo de los KPIs, se inserta un paragrafo usando un campo de markdown
 # Menú lateral con las pestañas
 selected_tab = st.sidebar.radio("Visualización: ", ["1- Recloser instalados.", "2- Recloser comunicación."])
 st.sidebar.markdown("---")# Insertar una línea horizontal
@@ -300,7 +288,18 @@ if selected_tab == "1- Recloser instalados.":
     conteos_marcas = conteos_marcas.sort_values(by='Total', ascending=False) # Ordenar en base al número de recloser con respuesta.
 
     total_recloser=conteos_marcas['Total'].sum()
-    st.markdown(f"<p style='font-size: 34px; text-align: center; font-weight: bold;'>Recloser instalados: {total_recloser}</p>", unsafe_allow_html=True)
+    # URL de Google Maps
+    st.markdown('##')
+    url_input = "https://www.google.com/maps/d/u/0/viewer?mid=1jDCOXn4Su3ub1LHtoZyHbpffU_0ZwdA&ll=-11.344651744765466%2C-73.25285471281072&z=7"
+
+    col1, col2, col3 = st.columns([3.5,0.4,2.5]) #Centrar el botón
+    with col1:
+        st.markdown(f"<p style='font-size: 34px; text-align: right; font-weight: bold;'>Recloser instalados: {total_recloser}</p>", unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"<p style='font-size: 34px; text-align: center; font-weight: bold;'> ↝ </p>", unsafe_allow_html=True)
+    with col3:
+        if st.button("Ubicación de recloser en Google Maps"):
+            webbrowser.open(url_input, new=2)
 
     # 6° Guardar el gráfico de barras en la siguiente variable
     try:
