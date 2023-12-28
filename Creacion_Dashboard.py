@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import plotly.subplots as sp
 import openpyxl
+import webbrowser
 
 # 2° Ingreso de valores
 title_page_web='Recloser' #Título del Dashboard
@@ -64,22 +65,19 @@ col1.subheader("_Elaborado por_: :blue[S.D.C.A] 👷")#, divider='rainbow')
 imagen_path = "imagen.jpg"  # Ajusta la ruta de la imagen según sea necesario
 col2.image(imagen_path, use_column_width=True)
 
-# # Centrar la imagen en la columna 2 usando CSS
-# col2.markdown(
-#     f"""
-#     <style>
-#         div[data-testid="stImage"] img {{
-#             display: block;
-#             margin-left: auto;
-#             margin-right: auto;
-#         }}
-#     </style>
-#     """,
-#     unsafe_allow_html=True
-# )
+
+st.markdown('##')
+
+# URL de Google Maps
+st.markdown('##')
+url_input = "https://www.google.com/maps/d/u/0/viewer?mid=1jDCOXn4Su3ub1LHtoZyHbpffU_0ZwdA&ll=-11.344651744765466%2C-73.25285471281072&z=7"
+
+col1, col2, col3 = st.columns([1.3, 1, 1]) #Centrar el botón
+with col2:
+    if st.button("Ubicación en Google Maps"):
+        webbrowser.open(url_input, new=2)
 
 st.markdown('##') #Para separar el titulo de los KPIs, se inserta un paragrafo usando un campo de markdown
-
 # Menú lateral con las pestañas
 selected_tab = st.sidebar.radio("Visualización: ", ["1- Recloser instalados.", "2- Recloser comunicación."])
 st.sidebar.markdown("---")# Insertar una línea horizontal
