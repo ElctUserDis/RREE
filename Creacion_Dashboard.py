@@ -52,9 +52,31 @@ st.set_page_config(page_title = title_page_web, #Nombre de la pagina, sale arrib
                    page_icon = '⚡', # https://www.webfx.com/tools/emoji-cheat-sheet/
                    layout="wide")
 
-st.title(title_portada)
-st.subheader(name_empresa)
-st.subheader("_Elaborado por_: :blue[S.D.C.A] 👷")#, divider='rainbow')
+# Columnas
+col1, col2 = st.columns([7, 1])  # Usar proporciones para especificar el ancho relativo de cada columna
+
+
+col1.title(title_portada)
+col1.subheader(name_empresa)
+col1.subheader("_Elaborado por_: :blue[S.D.C.A] 👷")#, divider='rainbow')
+
+# Columna 2: Imagen
+imagen_path = "imagen.jpg"  # Ajusta la ruta de la imagen según sea necesario
+col2.image(imagen_path, use_column_width=True)
+
+# # Centrar la imagen en la columna 2 usando CSS
+# col2.markdown(
+#     f"""
+#     <style>
+#         div[data-testid="stImage"] img {{
+#             display: block;
+#             margin-left: auto;
+#             margin-right: auto;
+#         }}
+#     </style>
+#     """,
+#     unsafe_allow_html=True
+# )
 
 st.markdown('##') #Para separar el titulo de los KPIs, se inserta un paragrafo usando un campo de markdown
 
@@ -866,4 +888,3 @@ elif selected_tab == "2- Recloser comunicación.":
 
     except Exception as e:
         st.markdown("...(Espera)")
-        st.markdown(e)
