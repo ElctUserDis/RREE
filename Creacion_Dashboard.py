@@ -33,6 +33,17 @@ selected_columns = ['AMT',
                     'Rpta actual',
                     'Comunicación actual']
 
+selected_columns_comunicacion = ['Fecha',
+                    'AMT',
+                    'MARCA',
+                    'CONTROLADOR',
+                    'Código SCADA Actual',
+                    'SECC.GIS NUEVO',
+                    'OPERADOR INSTALADO',
+                    'IP DEL CHIP',
+                    'Rpta actual',
+                    'Comunicación actual']
+
 lista_recloser=["NOJA","NOJA Power","Schneider","JinkWang","ENTEC","S&C","ABB","SEL"] #Lista de recloser aptos
 
 #********************************************************************************************************
@@ -48,11 +59,12 @@ st.subheader("_Elaborado por_: :blue[S.D.C.A] 👷")#, divider='rainbow')
 st.markdown('##') #Para separar el titulo de los KPIs, se inserta un paragrafo usando un campo de markdown
 
 # Menú lateral con las pestañas
-selected_tab = st.sidebar.radio("Formas de visualización: ", ["1- Por fecha.", "2- Por periodo."])
+selected_tab = st.sidebar.radio("Visualización: ", ["1- Recloser instalados.", "2- Recloser comunicación."])
 st.sidebar.markdown("---")# Insertar una línea horizontal
 
 # Contenido de las pestañas
-if selected_tab == "1- Por fecha.":
+
+if selected_tab == "1- Recloser instalados.":
     # 4° Abre el libro de Excel "Registros.xlsx"
     direc=name_excel
 
@@ -66,7 +78,7 @@ if selected_tab == "1- Por fecha.":
     print(sheet_names) #Lista que almacena el nombre de las hojas del excel
 
     # Usamos el widget selectbox para seleccionar una hoja
-    hoja_excel = st.sidebar.selectbox("Fecha:", sheet_names)
+    hoja_excel = st.sidebar.selectbox("Fecha inicio:", sheet_names)
 
     # 5° Lectura de los datos de la hoja excel seleccionada.
     df = pd.read_excel(direc,sheet_name = hoja_excel)
@@ -74,7 +86,7 @@ if selected_tab == "1- Por fecha.":
     # 5° Creación de tablas
     #5.1 Creación de filtros
     st.sidebar.header("Opciones a filtrar:") #5.1.1 sidebar => Crear en la parte izquierda un cuadro para agregar los filtros que queremos tener
-    select_all = st.sidebar.checkbox("Seleccionar todo los filtros")# 5.1.2 Casilla de verificación para seleccionar todos los filtros
+    select_all = st.sidebar.checkbox("Seleccionar todos los filtros")# 5.1.2 Casilla de verificación para seleccionar todos los filtros
 
     
     # Filtro de Departamento
@@ -289,27 +301,25 @@ if selected_tab == "1- Por fecha.":
 
             # 6.1.2° Agrupar por 'UNIDAD DE NEGOCIO' => "Nro de recloser instalados"----------------->DIAGRAMA DE PASTEL
         with col2:
-            st.subheader("Porentaje de recloser por marca")
+            st.subheader("Porcentaje de recloser por marca")
             # 1° FORMA
                 # GRAFICAR
-            fig=px.pie(conteos_marcas,values='Total',hole=0.5)
+            fig=px.pie(conteos_marcas,values='Total',hole=0.25)
             fig.update_traces(text=conteos_marcas['Marca'], textposition='outside',textfont_size=15)
-            st.plotly_chart(fig,use_container_width=True)
+            st.plotly_chart(fig,use_container_width=False)
 
         # 6.2° Creación de tablas
             # 6.2.1: Creación de la tabla de los diagramas
-            conteos_marcas.reset_index(drop=True, inplace=True)
-            conteos_marcas['Porcentaje (%)']=round(conteos_marcas['Total']/total_recloser*100,2)
-            conteos_marcas.index = conteos_marcas.index + 1  # Hacer que la primera fila no sea "0"
-            with col1:
-                with st.expander("Marca_ViewData"):
-                    st.write(conteos_marcas)
-                    # # st.write(conteos_marcas.style.background_gradient(cmap="Greens"))# Imprimir la tabla.
-                    # Descargar la tabla en formato csv
-                    csvMarca = conteos_marcas.to_csv(index=False).encode('utf-8')  # Corregir aquí
-                    st.download_button("Download Data", data=csvMarca, file_name="Marca-DATA.csv", mime="text/csv")
+        conteos_marcas.reset_index(drop=True, inplace=True)
+        conteos_marcas['Porcentaje (%)']=round(conteos_marcas['Total']/total_recloser*100,2)
+        conteos_marcas.index = conteos_marcas.index + 1  # Hacer que la primera fila no sea "0"
 
-
+        with st.expander("Marca_ViewData"):
+            st.write(conteos_marcas)
+            # # st.write(conteos_marcas.style.background_gradient(cmap="Greens"))# Imprimir la tabla.
+            # Descargar la tabla en formato csv
+            csvMarca = conteos_marcas.to_csv(index=False).encode('utf-8')  # Corregir aquí
+            st.download_button("Download Data", data=csvMarca, file_name="Marca-DATA.csv", mime="text/csv")
 
         st.markdown("---") #separador
         #**********************************************************************************************************************************************************
@@ -317,6 +327,7 @@ if selected_tab == "1- Por fecha.":
         lista_elementos_rpta=list()
         lista_elementos_com=list()
 
+        # Listas para crear los DataFrames
         columnas_elementos_rpta=["MARCA","Total","Si rpta","No rpta"]
         columnas_elementos_com=["MARCA","Si rpta","Si comunicación","No comunicación"]
         
@@ -370,6 +381,8 @@ if selected_tab == "1- Por fecha.":
         df_RPTA = df_RPTA.sort_values(by='Total', ascending=False) # Ordenar en base al número de recloser con respuesta.
         df_COM = df_COM.sort_values(by='Si rpta', ascending=False) # Ordenar en base al número de recloser con respuesta.
 
+        df_RPTA.index = df_RPTA.index + 1  # Hacer que la primera fila no sea "0"
+        df_COM.index = df_COM.index + 1  # Hacer que la primera fila no sea "0"
         
         # Gráfico de pastel, con el número de recloser con respuesta y comunicación.
         left_column, right_column = st.columns(2)
@@ -388,18 +401,27 @@ if selected_tab == "1- Por fecha.":
         
             st.markdown(f"<p style='font-size: 22px; text-align: Center'>Respuesta de recloser: {si_rpta_total}/{si_rpta_total+no_rpta_total}</p>", unsafe_allow_html=True)            
             df_respuesta = pd.DataFrame(list(diccionario_respuesta.items()), columns=['Etiqueta', 'Valor'])
-            fig = px.pie(df_respuesta, values='Valor', hole=0, names=df_respuesta['Etiqueta'])  # Usa 'names' en lugar de 'labels'
-            fig.update_traces(textinfo='value', hoverinfo='label+value',textfont_size=30)  # Muestra los valores y etiquetas en el hover
+            # Crear y mostrar el gráfico de velocidad
+            fig = go.Figure(go.Indicator(
+                mode="gauge+number",
+                gauge={'axis': {'range': [0, si_rpta_total+no_rpta_total]},
+                    'steps': [{'range': [0,si_rpta_total], 'color': "blue"},
+                              {'range': [si_rpta_total,si_rpta_total+no_rpta_total], 'color': "red"}],
+                    'threshold': {'line': {'color': "black", 'width': 4}, 'thickness': 0.75, 'value': si_rpta_total}}))
             st.plotly_chart(fig, use_container_width=True)
-
 
         with right_column:
             st.markdown(f"<p style='font-size: 22px;  text-align: Center'>Comunicación de recloser: {si_com_total}/{si_rpta_total}</p>", unsafe_allow_html=True)
             df_comunication = pd.DataFrame(list(diccionario_comunicacion.items()), columns=['Etiqueta', 'Valor'])
-            fig = px.pie(df_comunication, values='Valor', hole=0, names=df_comunication['Etiqueta'])  # Usa 'names' en lugar de 'labels'
-            fig.update_traces(textinfo='value', hoverinfo='label+value',textfont_size=30)  # Muestra los valores y etiquetas en el hover
+            fig = go.Figure(go.Indicator(
+                mode="gauge+number",
+                gauge={'axis': {'range': [0, si_rpta_total]},
+                    'steps': [{'range': [0,si_com_total], 'color': "green"},
+                              {'range': [si_com_total,si_rpta_total], 'color': "brown"}],
+                    'threshold': {'line': {'color': "black", 'width': 4}, 'thickness': 0.75, 'value': si_com_total}}))
+            fig.update_layout(legend={'traceorder': 'reversed'})
             st.plotly_chart(fig, use_container_width=True)
-        
+            
         # Creación de tablas
         with left_column:
             with st.expander("Rpta_ViewData"):
@@ -419,8 +441,14 @@ if selected_tab == "1- Por fecha.":
 
         #******************************************************************************************************************************************************************************************************************
         #******************************************************************************************************************************************************************************************************************
+        st.markdown("---") #separador
         #6.2° RECLOSER POR UNIDAD DE NEGOCIO
             # Agregar una nueva columna 'Contador de "Si"'
+        condicion_SC = (df['MARCA'] == 'S&C') & ((df['SECC.GIS NUEVO'] == '--') | (df['OPERADOR INSTALADO'] == '--'))
+        condicion_ABB = (df['MARCA'] == 'ABB') & (df['CONTROLADOR'] != 'PCD2000R')
+        condicion_SEL = (df['MARCA'] == 'SEL') & (df['CONTROLADOR'] != 'SEL-351R')
+        filtered_df_UN = filtered_df_UN.loc[~(condicion_SC | condicion_ABB | condicion_SEL)]
+        
         filtered_df_UN['Recloser con respuesta'] = filtered_df_UN['Rpta actual'].apply(lambda x: x.count('Si'))
         filtered_df_UN['Recloser sin respuesta'] = filtered_df_UN['Rpta actual'].apply(lambda x: x.count('No'))
         filtered_df_UN['Recloser con comunicación'] = filtered_df_UN['Comunicación actual'].apply(lambda x: x.count('Si'))
@@ -436,173 +464,126 @@ if selected_tab == "1- Por fecha.":
         })
 
             # Calcular el número de Recloser instalados en cada UNIDAD DE NEGOCIO
-        grouped_2['Recloser instalados'] = filtered_df_UN['UNIDAD DE NEGOCIO'].value_counts().reindex(grouped_2.index)
-        
+        grouped_2['Recloser instalados'] = filtered_df_UN['UNIDAD DE NEGOCIO'].value_counts()
             # Crear el diagrama de pastel
         grouped_2 = grouped_2.sort_values(by='Recloser instalados', ascending=False) # Ordenar en base al número de recloser con respuesta.
+        grouped_2 = grouped_2.reset_index(drop=True)# Reiniciar la enumeración del DataFrame
+        grouped_2.index = grouped_2.index + 1 #Hacer que primera fila sea "1"
 
+        fig_rpta_UN = px.bar(grouped_2, 
+                            x=['Recloser instalados','Recloser con respuesta','Recloser con comunicación'], 
+                            y=grouped_2['UNIDAD DE NEGOCIO'],
+                            orientation="h", 
+                            color_discrete_sequence=["#C2BC18", "#FAA632", '#13B3C1'],
+                            opacity=[1], #Opacidad
+                            template='plotly_white')  
 
+        st.markdown(f"<p style='font-size: 22px; text-align: Center'>Recloser por Unidad de Negocio</p>", unsafe_allow_html=True)            
 
-#******************************************************************************************************************************************************************************************************************
-#******************************************************************************************************************************************************************************************************************
-        # 6.2° Agrupar por 'SUBESTACIÓN' => "Nro de respuestas y comunicación de los recloser"----------------->DIAGRAMA DE BARRAS EN HORIZONTAL
-        st.markdown("---") #separador
-        # Agregar una nueva columna 'Contador de "Si"'
-        grouped_1 = pd.DataFrame()
+        fig_rpta_UN.update_layout(
+            plot_bgcolor="rgba(0,0,0,0)",
+            yaxis_title='Unidad de Negocio',
+            xaxis_title='Cantidad de recloser',
+            title_x=0,
+            autosize=True,
+            height=1200
+        )
 
-        filtered_df_SE['Recloser con respuesta'] = filtered_df_SE['Rpta actual'].apply(lambda x: x.count('Si'))
-        filtered_df_SE['Sin Respuesta actual'] = filtered_df_SE['Rpta actual'].apply(lambda x: x.count('No'))
-        filtered_df_SE['Recloser con comunicación'] = filtered_df_SE['Comunicación actual'].apply(lambda x: x.count('Si'))
-        filtered_df_SE['Sin Comunicación actual'] = filtered_df_SE['Comunicación actual'].apply(lambda x: x.count('No'))
+        # Configurar el tamaño del gráfico
+        fig_rpta_UN.update_layout(height=450)
+        fig_rpta_UN.update_xaxes(range=[0, grouped_2['Recloser instalados'].max()+50],
+                                tickvals=list(range(0, grouped_2['Recloser instalados'].max()+50, 25)))
 
-        # Agrupar y sumar los valores
-        grouped_1 = filtered_df_SE.groupby('SUBESTACION').agg({
-            'Recloser con respuesta': 'sum',
-            'Sin Respuesta actual': 'sum',
-            'Recloser con comunicación': 'sum',
-            'Sin Comunicación actual': 'sum'
-        })
-        grouped_1['Recloser instalados'] = filtered_df_SE['SUBESTACION'].value_counts().reindex(grouped_1.index) # Conteo de recloser por SE.
+        fig_rpta_UN.update_traces(textposition='outside', textfont_size=15) 
 
-        # 6.1.4° Imprimir tabla
-        grouped_1 = grouped_1.sort_values(by='Recloser con respuesta', ascending=False) # Ordenar en base al número de recloser instalados.
-
-        fig_rpta_SE = px.bar(grouped_1, x=['Recloser con respuesta','Sin Respuesta actual'],  y=grouped_1.index,
-                                orientation= "h", #horizontal bar chart
-                                color_discrete_sequence=["blue", "red"],
-                                #color_discrete_sequence=px.colors.qualitative.Set3,  # Colores diferentes
-                                template='plotly_white')  # Ajustar el ancho
+        # Superponer las barras en lugar de apilarlas
+        fig_rpta_UN.update_layout(barmode='overlay')
         
-        fig_com_SE = px.bar(grouped_1, x=['Recloser con comunicación','Sin Comunicación actual'],  y=grouped_1.index,
-                            orientation= "h", #horizontal bar chart
-                            color_discrete_sequence=["blue", "green"],
-                            #color_discrete_sequence=px.colors.qualitative.Set3,  # Colores diferentes
-                            template='plotly_white')  # Ajustar el ancho
-
-        fig_rpta_SE.update_layout(
-            plot_bgcolor="rgba(0,0,0,0)",
-            yaxis_title='Subestaciones',  # Nombre del eje y
-            xaxis_title='Cantidad de recloser',  # Nombre del eje x
-            title_text="<b>Respuesta de recloser por Subestación</b>",
-            title_x=0,  # Alinear a la izquierda
-            autosize=True,  # Ajustar automáticamente al ancho disponible
-            height=1200  # Aumenta la altura a 600 píxeles (ajusta este valor según tus necesidades)
-
-        )
-
-        fig_com_SE.update_layout(
-            plot_bgcolor="rgba(0,0,0,0)",
-            yaxis_title='Subestaciones',  # Nombre del eje y
-            xaxis_title='Cantidad de recloser',  # Nombre del eje x
-            title_text="<b>Comunicación de recloser por Subestación</b>",
-            title_x=0,  # Alinear a la izquierda
-            autosize=True,  # Ajustar automáticamente al ancho disponible
-            height=1200  # Aumenta la altura a 600 píxeles (ajusta este valor según tus necesidades)
-
-        )
-        # st.plotly_chart(fig_rpta_SE)# Mostrar el gráfico en Streamlit
-
-        # 6.1.3° Colocar las gráficas con arreglo ( 1 x 2 )
-
-        left_column, right_column = st.columns(2)
-
-        left_column.plotly_chart(fig_rpta_SE, use_container_width = True) #esta va al lado izquierdo
-        right_column.plotly_chart(fig_com_SE, use_container_width = True)
-
-            #Tabla:
-        with st.expander("Subestaciones_ViewData"):
-            summary_df1 = grouped_1.reset_index()  # Reiniciar el índice del DataFrame
-            summary_df1.index = summary_df1.index + 1  # Hacer que la primera fila sea "1" en lugar de "0"
-            st.write(summary_df1)
-
-            # # st.write(summary_df1.style.background_gradient(cmap="Purples"))  # Imprimir la tabla.
+        # Mostrar el gráfico en Streamlit
+        st.plotly_chart(fig_rpta_UN, use_container_width=True)
+        
+        with st.expander("UN_ViewData"):
             # Descargar la tabla en formato csv
-            csvSE = summary_df1.to_csv(index=False).encode('utf-8')  # Corregir aquí
-            st.download_button("Download Data", data=csvSE, file_name="Subestaciones-DATA.csv", mime="text/csv")
+            csvUN = grouped_2.to_csv(index=False).encode('utf-8')  # Corregir aquí
+            st.write(grouped_2)
+            st.download_button("Download Data", data=csvUN, file_name="Unidad de Negocio-DATA.csv", mime="text/csv")
 
-        #******************************************************************************************************************************************************************************************************************
-        #******************************************************************************************************************************************************************************************************************
-        st.markdown("---") #separador
-        # 6.1° Agrupar por 'AMT' => El 'Nro de respuestas' y 'Nro de intermitencias'
-        grouped = filtered_df.groupby('AMT')[['Nro de respuestas', 'Nro de intermitencias','Nro de muestras']].sum()
-        grouped['Recloser instalados'] = filtered_df['AMT'].value_counts().reindex(grouped.index) # Nro de recloser en cada AMT
-        grouped = grouped.sort_values(by='Recloser instalados', ascending=False) # Ordenar en orden: (True)-Ascendente ; (False)-Descendente
+# # # #******************************************************************************************************************************************************************************************************************
+# # # #******************************************************************************************************************************************************************************************************************
+# # #         # 6.2° Agrupar por 'SUBESTACIÓN' => "Nro de respuestas y comunicación de los recloser"----------------->DIAGRAMA DE BARRAS EN HORIZONTAL
+# # #         st.markdown("---") #separador
+# # #         # Agregar una nueva columna 'Contador de "Si"'
+# # #         grouped_1 = pd.DataFrame()
 
-        # 6.1.1° Crear el gráfico de barras con subcolumnas y ajustar el ancho
-        # fig_rpta_interm = sp.make_subplots(rows=4, cols=2, column_widths=[8000, 8000], row_heights=[8000, 8000, 8000, 8000], vertical_spacing=0.2, horizontal_spacing=0.2)#, subplot_titles=['Subplot 1', 'Subplot 2', ...])
+# # #         filtered_df_SE['Recloser con respuesta'] = filtered_df_SE['Rpta actual'].apply(lambda x: x.count('Si'))
+# # #         filtered_df_SE['Sin Respuesta actual'] = filtered_df_SE['Rpta actual'].apply(lambda x: x.count('No'))
+# # #         filtered_df_SE['Recloser con comunicación'] = filtered_df_SE['Comunicación actual'].apply(lambda x: x.count('Si'))
+# # #         filtered_df_SE['Sin Comunicación actual'] = filtered_df_SE['Comunicación actual'].apply(lambda x: x.count('No'))
 
-        l_column_widths_AMT=[Ancho_AMT]*n_column_AMT
-        l_row_heights_AMT=[Ancho_AMT]*n_row_AMT
+# # #         # Agrupar y sumar los valores
+# # #         grouped_1 = filtered_df_SE.groupby('SUBESTACION').agg({
+# # #             'Recloser con respuesta': 'sum',
+# # #             'Sin Respuesta actual': 'sum',
+# # #             'Recloser con comunicación': 'sum',
+# # #             'Sin Comunicación actual': 'sum'
+# # #         })
+# # #         grouped_1['Recloser instalados'] = filtered_df_SE['SUBESTACION'].value_counts().reindex(grouped_1.index) # Conteo de recloser por SE.
+
+# # #         # 6.1.4° Imprimir tabla
+# # #         grouped_1 = grouped_1.sort_values(by='Recloser con respuesta', ascending=False) # Ordenar en base al número de recloser instalados.
+
+# # #         fig_rpta_SE = px.bar(grouped_1, x=['Recloser con respuesta','Sin Respuesta actual'],  y=grouped_1.index,
+# # #                                 orientation= "h", #horizontal bar chart
+# # #                                 color_discrete_sequence=["blue", "red"],
+# # #                                 #color_discrete_sequence=px.colors.qualitative.Set3,  # Colores diferentes
+# # #                                 template='plotly_white')  # Ajustar el ancho
         
-        fig_rpta_interm = sp.make_subplots(rows=n_row_AMT, cols=n_column_AMT, column_widths=l_column_widths_AMT, row_heights=l_row_heights_AMT, vertical_spacing=0.2, horizontal_spacing=0.2)#, subplot_titles=['Subplot 1', 'Subplot 2', ...])
+# # #         fig_com_SE = px.bar(grouped_1, x=['Recloser con comunicación','Sin Comunicación actual'],  y=grouped_1.index,
+# # #                             orientation= "h", #horizontal bar chart
+# # #                             color_discrete_sequence=["blue", "green"],
+# # #                             #color_discrete_sequence=px.colors.qualitative.Set3,  # Colores diferentes
+# # #                             template='plotly_white')  # Ajustar el ancho
 
+# # #         fig_rpta_SE.update_layout(
+# # #             plot_bgcolor="rgba(0,0,0,0)",
+# # #             yaxis_title='Subestaciones',  # Nombre del eje y
+# # #             xaxis_title='Cantidad de recloser',  # Nombre del eje x
+# # #             title_text="<b>Respuesta de recloser por Subestación</b>",
+# # #             title_x=0,  # Alinear a la izquierda
+# # #             autosize=True,  # Ajustar automáticamente al ancho disponible
+# # #             height=1200  # Aumenta la altura a 600 píxeles (ajusta este valor según tus necesidades)
 
-        # Agregar los gráficos a cada subsubplot
-        grouped_aux = grouped.sort_values(by='Nro de respuestas', ascending=True).copy()
-        total_filas_grouped_aux = len(grouped_aux)
-        division_entera, residuo = divmod(total_filas_grouped_aux, n_fig_AMT)    
-        #Obtener el nuevo residuo cuando el cociente se incrementa en 1
-        division_entera+=1
-        residuo=total_filas_grouped_aux-division_entera*n_fig_AMT
-        
-        #Creación de la lista donde se mostrarán las figuras
-        lista_valores = [division_entera] * n_fig_AMT
-        lista_valores[-1] += residuo
+# # #         )
 
+# # #         fig_com_SE.update_layout(
+# # #             plot_bgcolor="rgba(0,0,0,0)",
+# # #             yaxis_title='Subestaciones',  # Nombre del eje y
+# # #             xaxis_title='Cantidad de recloser',  # Nombre del eje x
+# # #             title_text="<b>Comunicación de recloser por Subestación</b>",
+# # #             title_x=0,  # Alinear a la izquierda
+# # #             autosize=True,  # Ajustar automáticamente al ancho disponible
+# # #             height=1200  # Aumenta la altura a 600 píxeles (ajusta este valor según tus necesidades)
 
-        indice_inicial = 0
-        for i in range(n_fig_AMT):
-            col_idx = i % 2 + 1
-            row_idx = i // 2 + 1
-            
-            # Obtiene el límite superior del bloque actual
-            limite_superior = indice_inicial + lista_valores[i]
-            
-            # Crea un nuevo DataFrame copiando las filas correspondientes
-            df_aux = grouped.iloc[indice_inicial:limite_superior].copy()
-            df_aux = df_aux.sort_values(by='Nro de intermitencias', ascending=True) # Ordenar en orden: (True)-Ascendente ; (False)-Descendente
-            # Puedes imprimir df_aux o realizar cualquier otra operación con él aquí
-            
-            # Actualiza el índice inicial para el próximo ciclo
-            indice_inicial = limite_superior
-                
-            
-            subfig = go.Figure(data=[
-                go.Bar(x=df_aux.index, y=df_aux['Nro de respuestas'], name='Nro de respuestas'),
-                go.Bar(x=df_aux.index, y=df_aux['Nro de intermitencias'], name='Nro de intermitencias')
-            ])
-            subfig.update_layout(showlegend=True)
+# # #         )
+# # #         # st.plotly_chart(fig_rpta_SE)# Mostrar el gráfico en Streamlit
 
-            fig_rpta_interm.add_trace(subfig.data[0], row=row_idx, col=col_idx)
-            fig_rpta_interm.add_trace(subfig.data[1], row=row_idx, col=col_idx)
+# # #         # 6.1.3° Colocar las gráficas con arreglo ( 1 x 2 )
 
-        # 6.1.2° Configuración de diseño
-        fig_rpta_interm.update_layout(
-            plot_bgcolor="rgba(0,0,0,0)",
-            xaxis=dict(showgrid=False), #tickangle=-45),
-            xaxis_title='AMT',
-            title_x=0.5,
-            autosize=False  # Desactivar el ajuste automático al ancho disponible
-        )
+# # #         left_column, right_column = st.columns(2)
 
-        fig_rpta_interm.update_layout(title_text="<b>Respuesta por Alimentador (AMT)</b>", title_x=0, title_y=0.97, title_font_size=20)
+# # #         left_column.plotly_chart(fig_rpta_SE, use_container_width = True) #esta va al lado izquierdo
+# # #         right_column.plotly_chart(fig_com_SE, use_container_width = True)
 
-        st.plotly_chart(fig_rpta_interm)
+# # #             #Tabla:
+# # #         with st.expander("Subestaciones_ViewData"):
+# # #             summary_df1 = grouped_1.reset_index()  # Reiniciar el índice del DataFrame
+# # #             summary_df1.index = summary_df1.index + 1  # Hacer que la primera fila sea "1" en lugar de "0"
+# # #             st.write(summary_df1)
 
-        
-        # 6.1.3° Mostrar la tabla de resumen   
-
-            #Tabla:
-        with st.expander("Alimentador_ViewData"):
-            summary_df = grouped.reset_index()  # Reiniciar el índice del DataFrame
-            summary_df.index = summary_df.index + 1  # Hacer que la primera fila sea "1" en lugar de "0"
-            st.write(summary_df)
-            # # st.write(summary_df.style.background_gradient(cmap="Reds"))  # Imprimir la tabla.
-            # Descargar la tabla en formato csv
-            csvAMT = summary_df.to_csv(index=False).encode('utf-8')  # Corregir aquí
-            st.download_button("Download Data", data=csvAMT, file_name="Alimentador-DATA.csv", mime="text/csv")
-
-
+# # #             # # st.write(summary_df1.style.background_gradient(cmap="Purples"))  # Imprimir la tabla.
+# # #             # Descargar la tabla en formato csv
+# # #             csvSE = summary_df1.to_csv(index=False).encode('utf-8')  # Corregir aquí
+# # #             st.download_button("Download Data", data=csvSE, file_name="Subestaciones-DATA.csv", mime="text/csv")
         
         # **************************************
         st.markdown("---") #separador
@@ -618,7 +599,271 @@ if selected_tab == "1- Por fecha.":
         st.markdown(hide_st_style, unsafe_allow_html= True)
 
     except Exception as e:
-        st.markdown(f"....(Espera)")
+        st.markdown("...(Espera)")
 
-elif selected_tab == "2- Por periodo.":
-    st.header("¡UPS!, Esta pestaña se encuentra en actualizacion.")
+elif selected_tab == "2- Recloser comunicación.":
+    try:
+        # st.header("¡UPS!, Esta pestaña se encuentra en actualizacion.")
+
+        # 4° Abre el libro de Excel "Registros.xlsx"
+        direc=name_excel
+        workbook = openpyxl.load_workbook(direc)
+
+        #4.1° Fecha de inicio
+        sheet_names = []# Lista que almacenará los nombres de las hojas
+        for sheet in workbook.sheetnames:# Recorre todas las hojas del libro
+            if sheet != "SELECTORES":
+                if sheet != "PLANTILLA":
+                    sheet_names.append(sheet)
+        hoja_excel = st.sidebar.selectbox("Fecha inicio:", sheet_names) # Usamos el widget selectbox para seleccionar una hoja
+        for ii,vv in enumerate(sheet_names):
+            if vv==hoja_excel:
+                item_inicio=ii
+
+        #4.2° Fecha final
+        hoja_excel_final = st.sidebar.selectbox("Fecha final:", sheet_names[item_inicio:])# Usamos el widget selectbox para seleccionar una hoja
+        for ii,vv in enumerate(sheet_names):
+            if vv==hoja_excel_final:
+                item_final=ii
+        workbook.close()# Cierra el libro
+        st.sidebar.markdown("----")
+
+        # 5° Lectura de los datos deL intervalor
+        k_aux=0
+        df = pd.read_excel(direc,sheet_name = hoja_excel)
+            
+        # 5° Creación de tablas
+        #5.1 Creación de filtros
+        st.sidebar.header("Opciones a filtrar:") #5.1.1 sidebar => Crear en la parte izquierda un cuadro para agregar los filtros que queremos tener
+        select_all = st.sidebar.checkbox("Seleccionar todos los filtros")# 5.1.2 Casilla de verificación para seleccionar todos los filtros
+
+        # 5.1.1° Filtro de Departamento
+        dpto = st.sidebar.multiselect(
+            "Seleccione el Departamento:",
+            options=['Seleccionar todo'] + df['DEPARTAMENTO'].unique().tolist(),
+            default=[],
+        )
+
+        if 'Seleccionar todo' in dpto:
+            dpto = df['DEPARTAMENTO'].unique().tolist()
+
+        # 5.1.2° Filtro de Unidad de Negocio (se habilita en función de la selección de Departamento)
+        unidad_negocio_options = df[df['DEPARTAMENTO'].isin(dpto)]['UNIDAD DE NEGOCIO'].unique()
+        unidad_negocio = st.sidebar.multiselect(
+            "Seleccione la Unidad de Negocio:",
+            options=['Seleccionar todo'] + unidad_negocio_options.tolist(),
+            default=[],
+        )
+
+        if 'Seleccionar todo' in unidad_negocio:
+            unidad_negocio = unidad_negocio_options.tolist()
+
+        # 5.1.3° Filtro de Subestación (se habilita en función de la selección de Unidad de Negocio)
+        se_options = df[
+            (df['DEPARTAMENTO'].isin(dpto)) &
+            (df['UNIDAD DE NEGOCIO'].isin(unidad_negocio))
+        ]['SUBESTACION'].unique()
+        se = st.sidebar.multiselect(
+            "Seleccione la Subestación:",
+            options=['Seleccionar todo'] + se_options.tolist(),
+            default=[],
+        )
+
+        if 'Seleccionar todo' in se:
+            se = se_options.tolist()
+
+        # 5.1.4° Filtro de Operador (se habilita en función de la selección de Subestación)
+        operador_options = df[
+            (df['DEPARTAMENTO'].isin(dpto)) &
+            (df['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
+            (df['SUBESTACION'].isin(se))
+        ]['OPERADOR INSTALADO'].unique()
+        operador = st.sidebar.multiselect(
+            "Seleccione el Operador:",
+            options=['Seleccionar todo'] + operador_options.tolist(),
+            default=[],
+        )
+
+        if 'Seleccionar todo' in operador:
+            operador = operador_options.tolist()
+
+        # 5.1.6° Verificar si se ha seleccionado algún departamento y desmarcar el checkbox si es el caso
+        if len(operador) > 0:
+            select_all = False
+
+        # 5.2° Seleccionar todos los filtros
+        if select_all:
+            dpto = df['DEPARTAMENTO'].unique()
+            unidad_negocio_options = df['UNIDAD DE NEGOCIO'].unique()
+            unidad_negocio = unidad_negocio_options
+            se_options = df['SUBESTACION'].unique()
+            se = se_options
+            operador_options = df['OPERADOR INSTALADO'].unique()
+            operador = operador_options
+
+        # Filtrar el DataFrame en base a todas las selecciones anteriores
+        filtered_df = df[
+            (df['DEPARTAMENTO'].isin(dpto)) &
+            (df['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
+            (df['SUBESTACION'].isin(se)) &
+            (df['OPERADOR INSTALADO'].isin(operador))
+        ]
+
+        # 5.3.1° Filtro de Alimentador (AMT)
+        st.sidebar.markdown("----")
+        st.sidebar.header("Filtro del Alimentador (AMT):")
+        amt_options = filtered_df['AMT'].unique()
+        amt_input = st.sidebar.text_input("Escriba el alimentador (AMT):", "")
+        filtered_amt_options = [option for option in amt_options if amt_input.lower() in option.lower()]
+        amt = st.sidebar.selectbox("Seleccione el alimentador (AMT):", options=filtered_amt_options, index=0 if filtered_amt_options else None)
+
+        st.sidebar.markdown("----")
+        filtro_opcion = st.sidebar.selectbox("Elección del campo:", ["1- SCADA", "2- GIS"])# Barra desplegable para seleccionar entre "SCADA" y "GIS"
+        if filtro_opcion == "1- SCADA":
+            # 5.3.2° Filtro por código SCADA
+
+            st.sidebar.header("Seleccione el código SCADA:")
+            scada_options = filtered_df[filtered_df['AMT'] == amt]['Código SCADA Actual'].unique()
+            scada_options_non_empty = [option for option in scada_options if option.strip() != '']# Filtra los elementos que contienen "RE"
+            seleccion = st.sidebar.radio("", options= scada_options_non_empty, index=0) # Muestrame en el cuadro de los check-list
+            field_camp = 'Código SCADA Actual'
+
+        
+        elif filtro_opcion == "2- GIS":
+            # 5.3.3° Filtro por código SECCIONAMIENTO - Filtrado en base a todas las selecciones anteriores
+            st.sidebar.header("Seleccione el código del SECCIONAMIENTO")
+            gis_options = filtered_df[filtered_df['AMT'] == amt]['SECC.GIS NUEVO'].unique()
+            gis_options_filtered = [option for option in gis_options if option.strip() != '' and option != '--']
+            seleccion = st.sidebar.radio("", options=list(gis_options), index=0)
+            field_camp = 'SECC.GIS NUEVO'
+        
+        diccionario_fechas={
+            "Fecha":[],
+            "Nro de respuestas":[],
+            "Nro de intermitencias":[],
+            "Nro de muestras":[],
+            "Rpta actual":[],
+            "Comunicación actual":[]
+        }
+        for hoja_recorrido in sheet_names[item_inicio:item_final+1]:
+            # 5° Lectura de los datos de la hoja excel seleccionada.
+            df_aux = pd.read_excel(direc,sheet_name = hoja_recorrido)
+            
+            diccionario_fechas['Fecha'].append(hoja_recorrido)
+            diccionario_fechas['Nro de respuestas'].append(df_aux.loc[(df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion), 'Nro de respuestas'].iloc[0])
+                # df_aux.loc[(df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion), 'Nro de respuestas'].iloc[0]:
+                    # Mascara: (df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion)
+                    # Valor que deseamos sacar: df_aux.loc[... , "field_name" ] => Como un dataframe
+                    # Solo obtener el valor: .iloc[0] => Es solo un número.
+            
+            diccionario_fechas['Nro de intermitencias'].append(df_aux.loc[(df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion), 'Nro de intermitencias'].iloc[0])
+            diccionario_fechas['Nro de muestras'].append(df_aux.loc[(df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion), 'Nro de muestras'].iloc[0])
+            diccionario_fechas['Rpta actual'].append(df_aux.loc[(df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion), 'Rpta actual'].iloc[0])
+            diccionario_fechas['Comunicación actual'].append(df_aux.loc[(df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion), 'Comunicación actual'].iloc[0])
+
+
+        # Obtener los datos de la fila seleccionada.
+        fila_seleccionada = df[df[field_camp] == seleccion].iloc[0,:13].to_frame().T #Datos de la fila que se selecciona.
+            #iloc[0,:13]: Mantenerme las 13 primeras columnas.
+            #.to_frame().T: Transponición de filas y columnas.
+        fila_seleccionada = pd.concat([fila_seleccionada] * (item_final-item_inicio+1), ignore_index=True)
+            #Aumentar las filas de fila_seleccionada y poner los valores de la primera fila en las filas nuevas.
+        
+        df_final=pd.DataFrame(diccionario_fechas)
+        df_final = pd.concat([df_final.iloc[:, :1], fila_seleccionada.iloc[:, 1:], df_final.iloc[:, 1:].reset_index(drop=True)], axis=1)
+            #Añadir el dataframe fila_seleccionada a partir de la columna 1 del df_final.
+
+        # Filtro de los campos
+        with st.expander("Tabla de datos_ViewData    =====================================================================================================>  (Expandir)"):
+            selected_columns_aux=selected_columns_comunicacion #Crear una copia de las columnas a mostrar por defecto
+
+            #Filtrar las columnas seleccionadas por defecto, en la barra de selección.
+            selected_columns_comunicacion = st.multiselect(
+                "Seleccione el(los) campo(s) a mostrar:",
+                options=['Seleccionar todo'] + [col for col in df_final.columns if col not in selected_columns_comunicacion], #Excluir las columnas que lo pondremos por defecto
+                default=[],
+                #filtered_df_reinicio.columns[0:3].tolist()+filtered_df_reinicio.columns[9:11].tolist()+filtered_df_reinicio.columns[15:].tolist()
+            )
+
+            if 'Seleccionar todo' in selected_columns_comunicacion and len(selected_columns_comunicacion) > 1:
+                #Remover la opción seleccionar todo, si en caso marcamos otra columna.
+                selected_columns_comunicacion.remove('Seleccionar todo') 
+                st.warning("'Seleccionar todo' ha sido desmarcado. Porque seleccionaste otro campo.")
+
+            if 'Seleccionar todo' in selected_columns_comunicacion: 
+                #Excluir las columnas que lo pondremos por defecto
+                selected_columns_comunicacion = [col for col in df_final.columns if col not in selected_columns_aux]
+
+            selected_columns_comunicacion = selected_columns_comunicacion + selected_columns_aux
+
+            # Mostrar las columnas por defecto
+            filtered_df_reinicio = df_final[selected_columns_comunicacion]
+
+            # Reorganizar las columnas del DataFrame según el orden de selección
+            column_names = filtered_df_reinicio.columns.tolist()# Lista de las columnas de la tabla de datos "filtered_df_reinicio"
+            filtered_df_reinicio = filtered_df_reinicio[df_final.columns.intersection(column_names)]# Ordenar las columnas en base al orden del "df => Excel"
+
+            filtered_df_reinicio = filtered_df_reinicio.reset_index(drop=True)# Reiniciar la enumeración del DataFrame
+            filtered_df_reinicio.index = filtered_df_reinicio.index + 1 #Hacer que primera fila no sea "0"
+
+                # TABLA
+            filtered_df_reinicio = filtered_df_reinicio.set_index(filtered_df_reinicio.columns[0]) #Convertir la primera columna en el índice del dataframe.
+            st.write(filtered_df_reinicio)
+
+            # # st.write(filtered_df_reinicio.style.background_gradient(cmap="Oranges"))# Imprimir la tabla.
+            # Descargar la tabla en formato csv
+            csvRES = filtered_df_reinicio.to_csv(index=False).encode('utf-8')  # Corregir aquí
+            st.download_button("Download Data", data=csvRES, file_name="Tabla_Datos-DATA.csv", mime="text/csv")
+
+        
+        filtered_df_reinicio.reset_index(inplace=True) #Reiniciar el índice y hacer que su indice inicial se convierta en la primera columna.
+        
+        df_grafico=filtered_df_reinicio.copy() #Crear una copia del dataframe original
+        df_grafico.replace({'Si': 2, 'No': 1}, inplace=True) # Reemplazar los valores "Si" y "No" por 2 y 1
+
+        df_grafico['Color_rpta'] = df_grafico['Rpta actual'].map({2: 'green', 1: 'red'}) # Crear nueva columna para "Asignar colores"
+        df_grafico['Texto_rpta'] = df_grafico['Rpta actual'].map({2: 'Si', 1: 'No'}) # Crear nueva columna para "Asignar texto", encima de las barras
+
+        df_grafico['Color_com'] = df_grafico['Comunicación actual'].map({2: 'green', 1: 'red'}) # Crear nueva columna para "Asignar colores"
+        df_grafico['Texto_com'] = df_grafico['Comunicación actual'].map({2: 'Si', 1: 'No'}) # Crear nueva columna para "Asignar texto", encima de las barras
+
+        st.markdown("---") #separador
+        col1,col2=st.columns((2)) #Creación arreglo de gráficas (1x2)
+
+        # 6.1.1° Evolución de la respuesta en el tiempo
+        with col1:
+            st.markdown(f"<p style='font-size: 22px; text-align: Center'>Respuesta de recloser</p>", unsafe_allow_html=True)    
+            fig = px.bar(df_grafico, x="Fecha", y="Rpta actual",
+                        color='Color_rpta',
+                        text='Texto_rpta',
+                        template="plotly", # Cambiar la paleta de colores a "plotly"
+                        color_discrete_map={'red': 'red', 'blue': 'blue'})
+            
+            fig.update_layout(showlegend=False) # Ocultar la leyenda.
+                # Configuración para mostrar el texto encima de las barras y con tamaño 24
+            fig.update_traces(textposition='outside', textfont_size=15) # Config. de las etiquetas de las barras.
+            fig.update_layout(xaxis=dict(tickangle=-45, tickfont=dict(size=15)),
+                              yaxis=dict(showticklabels=False, range=[0, 2.5]))
+            
+            st.plotly_chart(fig, use_container_width=True, height=200)
+
+        # 6.1.2° Evolución de la comunicación en el tiempo
+        with col2:
+            st.markdown(f"<p style='font-size: 22px; text-align: Center'>Comunicación de recloser</p>", unsafe_allow_html=True)
+            fig = px.bar(df_grafico, x="Fecha", y="Comunicación actual",
+                        color='Color_com',
+                        text='Texto_com',
+                        template="plotly", # Cambiar la paleta de colores a "plotly"
+                        color_discrete_map={'red': 'red', 'green': 'green'})
+            
+            fig.update_layout(showlegend=False) # Ocultar la leyenda.
+                # Configuración para mostrar el texto encima de las barras y con tamaño 24
+            fig.update_traces(textposition='outside', textfont_size=15) # Config. de las etiquetas de las barras.
+            fig.update_layout(xaxis=dict(tickangle=-45, tickfont=dict(size=15)),
+                              yaxis=dict(showticklabels=False, range=[0, 2.5]))
+            
+            st.plotly_chart(fig, use_container_width=True, height=200)
+
+    except Exception as e:
+        st.markdown("...(Espera)")
+        st.markdown(e)
