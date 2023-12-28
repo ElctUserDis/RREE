@@ -298,8 +298,8 @@ if selected_tab == "1- Recloser instalados.":
     with col2:
         st.markdown(f"<p style='font-size: 34px; text-align: center; font-weight: bold;'> ↝ </p>", unsafe_allow_html=True)
     with col3:
-        if st.button("Ubicación de recloser en Google Maps"):
-            webbrowser.open(url_input, new=2)
+        st.markdown(f"[[ Ubicación de recloser en Google Maps ]]({url_input})")
+
 
     # 6° Guardar el gráfico de barras en la siguiente variable
     try:
