@@ -648,7 +648,6 @@ elif selected_tab == "2- Recloser comunicación.":
         st.sidebar.markdown("----")
 
         # 5° Lectura de los datos deL intervalor
-        k_aux=0
         df = pd.read_excel(direc,sheet_name = hoja_excel)
             
         # 5° Creación de tablas
@@ -720,18 +719,26 @@ elif selected_tab == "2- Recloser comunicación.":
             operador_options = df['OPERADOR INSTALADO'].unique()
             operador = operador_options
 
-        # Filtrar el DataFrame en base a todas las selecciones anteriores
-        filtered_df = df[
-            (df['DEPARTAMENTO'].isin(dpto)) &
-            (df['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
-            (df['SUBESTACION'].isin(se)) &
-            (df['OPERADOR INSTALADO'].isin(operador))
-        ]
+        # # Filtrar el DataFrame en base a todas las selecciones anteriores
+        # filtered_df = df[
+        #     (df['DEPARTAMENTO'].isin(dpto)) &
+        #     (df['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
+        #     (df['SUBESTACION'].isin(se)) &
+        #     (df['OPERADOR INSTALADO'].isin(operador))
+        # ]
 
         # 5.3.1° Filtro de Alimentador (AMT)
         st.sidebar.markdown("----")
         st.sidebar.header("Filtro del Alimentador (AMT):")
-        amt_options = filtered_df['AMT'].unique()
+        # amt_options = filtered_df['AMT'].unique()
+
+        amt_options = df[
+            (df['DEPARTAMENTO'].isin(dpto)) &
+            (df['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
+            (df['SUBESTACION'].isin(se)) &
+            (df['OPERADOR INSTALADO'].isin(operador))
+        ]['AMT'].unique()
+        
         amt_input = st.sidebar.text_input("Escriba el alimentador (AMT):", "")
         filtered_amt_options = [option for option in amt_options if amt_input.lower() in option.lower()]
         amt = st.sidebar.selectbox("Seleccione el alimentador (AMT):", options=filtered_amt_options, index=0 if filtered_amt_options else None)
@@ -742,7 +749,7 @@ elif selected_tab == "2- Recloser comunicación.":
             # 5.3.2° Filtro por código SCADA
 
             st.sidebar.header("Seleccione el código SCADA:")
-            scada_options = filtered_df[filtered_df['AMT'] == amt]['Código SCADA Actual'].unique()
+            scada_options = df[df['AMT'] == amt]['Código SCADA Actual'].unique()
             scada_options_non_empty = [option for option in scada_options if option.strip() != '']# Filtra los elementos que contienen "RE"
             seleccion = st.sidebar.radio("", options= scada_options_non_empty, index=0) # Muestrame en el cuadro de los check-list
             field_camp = 'Código SCADA Actual'
@@ -751,11 +758,11 @@ elif selected_tab == "2- Recloser comunicación.":
         elif filtro_opcion == "2- GIS":
             # 5.3.3° Filtro por código SECCIONAMIENTO - Filtrado en base a todas las selecciones anteriores
             st.sidebar.header("Seleccione el código del SECCIONAMIENTO")
-            gis_options = filtered_df[filtered_df['AMT'] == amt]['SECC.GIS NUEVO'].unique()
+            gis_options = df[df['AMT'] == amt]['SECC.GIS NUEVO'].unique()
             gis_options_filtered = [option for option in gis_options if option.strip() != '' and option != '--']
             seleccion = st.sidebar.radio("", options=list(gis_options), index=0)
             field_camp = 'SECC.GIS NUEVO'
-        
+
         diccionario_fechas={
             "Fecha":[],
             "Nro de respuestas":[],
@@ -770,10 +777,10 @@ elif selected_tab == "2- Recloser comunicación.":
             
             diccionario_fechas['Fecha'].append(hoja_recorrido)
             diccionario_fechas['Nro de respuestas'].append(df_aux.loc[(df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion), 'Nro de respuestas'].iloc[0])
-                # df_aux.loc[(df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion), 'Nro de respuestas'].iloc[0]:
-                    # Mascara: (df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion)
-                    # Valor que deseamos sacar: df_aux.loc[... , "field_name" ] => Como un dataframe
-                    # Solo obtener el valor: .iloc[0] => Es solo un número.
+                    # df_aux.loc[(df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion), 'Nro de respuestas'].iloc[0]:
+                        # Mascara: (df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion)
+                        # Valor que deseamos sacar: df_aux.loc[... , "field_name" ] => Como un dataframe
+                        # Solo obtener el valor: .iloc[0] => Es solo un número.
             
             diccionario_fechas['Nro de intermitencias'].append(df_aux.loc[(df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion), 'Nro de intermitencias'].iloc[0])
             diccionario_fechas['Nro de muestras'].append(df_aux.loc[(df_aux['AMT'] == amt) & (df_aux[field_camp] == seleccion), 'Nro de muestras'].iloc[0])
@@ -840,10 +847,14 @@ elif selected_tab == "2- Recloser comunicación.":
         df_grafico=filtered_df_reinicio.copy() #Crear una copia del dataframe original
         df_grafico.replace({'Si': 2, 'No': 1}, inplace=True) # Reemplazar los valores "Si" y "No" por 2 y 1
 
-        df_grafico['Color_rpta'] = df_grafico['Rpta actual'].map({2: 'green', 1: 'red'}) # Crear nueva columna para "Asignar colores"
+        si_rpta_color='#3D2B8E'
+        si_com_color='#badb73'
+        no_color='#ffaaa6'
+
+        df_grafico['Color_rpta'] = df_grafico['Rpta actual'].map({2: si_rpta_color, 1: no_color}) # Crear nueva columna para "Asignar colores"
         df_grafico['Texto_rpta'] = df_grafico['Rpta actual'].map({2: 'Si', 1: 'No'}) # Crear nueva columna para "Asignar texto", encima de las barras
 
-        df_grafico['Color_com'] = df_grafico['Comunicación actual'].map({2: 'green', 1: 'red'}) # Crear nueva columna para "Asignar colores"
+        df_grafico['Color_com'] = df_grafico['Comunicación actual'].map({2: si_com_color, 1: no_color}) # Crear nueva columna para "Asignar colores"
         df_grafico['Texto_com'] = df_grafico['Comunicación actual'].map({2: 'Si', 1: 'No'}) # Crear nueva columna para "Asignar texto", encima de las barras
 
         st.markdown("---") #separador
@@ -856,15 +867,15 @@ elif selected_tab == "2- Recloser comunicación.":
                         color='Color_rpta',
                         text='Texto_rpta',
                         template="plotly", # Cambiar la paleta de colores a "plotly"
-                        color_discrete_map={'red': 'red', 'blue': 'blue'})
+                        color_discrete_map={si_rpta_color: si_rpta_color,no_color: no_color})
             
             fig.update_layout(showlegend=False) # Ocultar la leyenda.
                 # Configuración para mostrar el texto encima de las barras y con tamaño 24
             fig.update_traces(textposition='outside', textfont_size=15) # Config. de las etiquetas de las barras.
             fig.update_layout(xaxis=dict(tickangle=-45, tickfont=dict(size=15)),
                               yaxis=dict(showticklabels=False, range=[0, 2.5]))
-            
-            st.plotly_chart(fig, use_container_width=True, height=200)
+
+            st.plotly_chart(fig, use_container_width=True, height=200) # Graficar el streamlit
 
         # 6.1.2° Evolución de la comunicación en el tiempo
         with col2:
@@ -873,7 +884,7 @@ elif selected_tab == "2- Recloser comunicación.":
                         color='Color_com',
                         text='Texto_com',
                         template="plotly", # Cambiar la paleta de colores a "plotly"
-                        color_discrete_map={'red': 'red', 'green': 'green'})
+                        color_discrete_map={si_com_color: si_com_color,no_color:no_color})
             
             fig.update_layout(showlegend=False) # Ocultar la leyenda.
                 # Configuración para mostrar el texto encima de las barras y con tamaño 24
@@ -882,6 +893,55 @@ elif selected_tab == "2- Recloser comunicación.":
                               yaxis=dict(showticklabels=False, range=[0, 2.5]))
             
             st.plotly_chart(fig, use_container_width=True, height=200)
+            
+        # 6.1.3° Rectas de respuestas
+        st.markdown("---") #separador
+        df_aux=df_final.copy()
+        
+        # Crear el gráfico de líneas con Plotly Express
+        fig = px.line()
+
+        # Agregar líneas punteadas hacia arriba en cada fecha
+        for date in df_aux['Fecha']:
+            fig.add_shape(
+                type='line',
+                x0=date,
+                x1=date,
+                y0=-2,
+                y1=df_aux['Nro de respuestas'].max()+2,
+                line=dict(dash='dash', color='#FFFF93'),
+                name='Nro de respuestas'
+            )
+        
+        # Añadir otra línea para 'Nro de respuestas'
+        fig.add_trace(
+            go.Scatter(
+                x=df_aux['Fecha'],
+                y=df_aux['Nro de respuestas'],
+                mode='lines+markers',  # Incluir línea y puntos
+                line=dict(color='blue'), # Color de la línea
+                marker=dict(size=10), # Tamaño de los puntos
+                name='Nro de respuestas'
+            )
+        )
+        # Añadir otra línea para 'Nro de intermitencias'
+        fig.add_trace(
+            go.Scatter(
+                x=df_aux['Fecha'],
+                y=df_aux['Nro de intermitencias'],
+                mode='lines+markers',  # Incluir línea y puntos
+                line=dict(color='red'), # Color de la línea
+                marker=dict(size=10), # Tamaño de los puntos
+                name='Nro de intermitencias'
+            )
+        )
+        fig.update_layout(xaxis=dict(tickangle=-45, tickfont=dict(size=15)),
+                          yaxis=dict(tickfont=dict(size=15),dtick=3))
+
+        # Mostrar el gráfico en Streamlit
+        st.plotly_chart(fig,use_container_width=True, height=200) #Poner altura y autoajustar en el horizontal.
+
+
 
     except Exception as e:
         st.markdown("...(Espera)")
