@@ -477,20 +477,24 @@ else:
 
             #6.3° GRÁFICA POR DEPARTAMENTO ==> Usaremos el dataframe filtrado (df_filtro_Marca)
             df_folium=pd.read_excel(name_ciudades,sheet_name="Ciudades")
-            CM_latitud,CM_longitud=-9.189967,-75.015152
+            CM_latitud,CM_longitud=-9.189967,-75.015152 # Punto de inicio
 
             map_folium = folium.Map(location=[CM_latitud,CM_longitud], zoom_start=6) # Creación del mapa folium centrado en un punto.
+            
+            for index,row in conteos_marcas_DPTO.iterrows():
+                Dep=row["DEPARTAMENTO"]
+                indice_dpto = df_folium.index[df_folium['DEPARTAMENTO'] == Dep].tolist()# Obtener el índice donde el valor en la columna "Dpto" es "Arequipa"
 
-            encabezado = df_folium.columns.tolist()
-            for index,row in df_folium.iterrows():
-                ciudad,lat,long=row[encabezado[0]],row[encabezado[1]],row[encabezado[2]]
-                Rec_total_DPTO=conteos_marcas_DPTO.at[index+1, 'Recloser instalados'] 
+                # Sacar las coordenadas y el color de los dptos seleccionados del excel:
+                lat=df_folium.at[indice_dpto[0], 'LATITUD']
+                long=df_folium.at[indice_dpto[0], 'LONGITUD']
+                name_color=df_folium.at[indice_dpto[0], 'COLOR']
 
-                etiqueta_cuadro=f'{ciudad}\n(cantidad:\n {Rec_total_DPTO} Rec.)'
-                name_color=row[encabezado[3]]
+                Rec_total_DPTO=row['Recloser instalados'] 
+                etiqueta_cuadro=f'{Dep}\n(cantidad:\n {Rec_total_DPTO} Rec.)'
 
-                folium.Marker(location=[lat,long], icon=folium.Icon(color=name_color), popup=etiqueta_cuadro, tooltip=ciudad).add_to(map_folium) # El popup es el cuadro que sale en el mapa.
-                folium.Circle(location=[lat,long], color=name_color,fill_color='pink',radius=4,weight=20,fill_opacity=0.5).add_to(map_folium)
+                folium.Marker(location=[lat,long], icon=folium.Icon(color=name_color), popup=etiqueta_cuadro, tooltip=Dep).add_to(map_folium) # El popup es el cuadro que sale en el mapa.
+                folium.Circle(location=[lat,long], color=name_color,radius=4,weight=20,fill_opacity=0.5).add_to(map_folium)
 
                     #Agregar minimapa
             folium.TileLayer().add_to(map_folium)
@@ -520,7 +524,6 @@ else:
             conteos_marcas_UN = conteos_marcas_UN.sort_values(by='UNIDAD DE NEGOCIO').reset_index(drop=True) #Ordenar por UN
             conteos_marcas_UN.index = conteos_marcas_UN.index + 1 # Hacer que el índice comience en 1.
 
-
 # GRÁFICA UN ----------------------------------------------------------------------------------------------------------------------------------------------------------
             # st.markdown(f"<p style='font-size: 22px; text-align: Center'>Recloser por Unidad de Negocio</p>", unsafe_allow_html=True)            
             # # OPCION 1: RADAR-CHART
@@ -535,8 +538,16 @@ else:
                 lista_radar_chart=[Sres,Nres,Scom,Ncom,Sres] # Al final duplicamos el primer valor, para que el diagrama sea cerrado.
                 curvas.append({"r":lista_radar_chart, "theta":ejes,"nombre":name_UN})
 
+            # Número de filas y columnas de la gráfica del radar.
+            n_fig_UUNN=len(conteos_marcas_UN) # Graficará 1 UUNN por figura
+            nro_filas_radar=1 # Número de filas "SE"
+
+            if n_fig_UUNN>4:
+                nro_filas_radar=2
+
+            nro_columnas_radar=n_fig_UUNN//nro_filas_radar # Cociente = n° de columnas            
+
             # Añadir las figuras un arreglos.
-            nro_filas_radar,nro_columnas_radar=2,4 # Número de filas y columnas de la gráfica del radar
             
             fig_UN = sp.make_subplots(rows=nro_filas_radar, cols=nro_columnas_radar, specs=[[{'type': 'polar'}]*nro_columnas_radar]*nro_filas_radar)
 
@@ -619,8 +630,7 @@ else:
 # GRÁFICA SUBESTACIONES ----------------------------------------------------------------------------------------------------------------------------------------------------------
             # st.markdown(f"<p style='font-size: 22px; text-align: Center'>Recloser por SUBESTACION</p>", unsafe_allow_html=True)
 
-            # n_fig_AMT=8 # Número de figuras para la figura DE "SE"
-            n_fig_AMT=math.ceil(len(conteos_marcas_SE)/9)
+            n_fig_AMT=math.ceil(len(conteos_marcas_SE)/9) # Graficará 9 subestaciones por figura
             n_row_AMT=1 # Número de filas "SE"
 
             if n_fig_AMT>4:
@@ -801,6 +811,7 @@ else:
             st.markdown(hide_st_style, unsafe_allow_html= True)
 
         except Exception as e:
+            st.write(e)
             st.error("...(Seleccionar los filtros)")
 
     elif selected_tab == lista_pestañas[2]:
