@@ -37,7 +37,7 @@ name_ciudades="Ciudades.xlsx" # Coordenadas de los departamentos.
 imagen_path = "imagen.jpg"  # Ajusta la ruta de la imagen según sea necesario
 
     # 2.2° PESTAÑA (01)
-lista_recloser=["NOJA","NOJA Power","Schneider","JinkWang","ENTEC","S&C","ABB","SEL"] # Recloser instalados (para el conteo).
+lista_recloser=["NOJA","NOJA Power","Schneider","JinkWang","Entec","ENTEC","S&C","ABB","SEL"] # Recloser instalados (para el conteo).
 # URL de Google Maps
 url_input = "https://www.google.com/maps/d/u/0/viewer?mid=1jDCOXn4Su3ub1LHtoZyHbpffU_0ZwdA&ll=-11.344651744765466%2C-73.25285471281072&z=7"
 
@@ -270,7 +270,9 @@ else:
                 # OPCIÓN N°01:
                     # Filtrar Dataframe
             df_filtro_Marca=filtered_df[filtered_df['MARCA'].isin(lista_recloser)]
-            df_filtro_Marca["MARCA"]=df_filtro_Marca["MARCA"].replace("NOJA Power", "NOJA")   
+            df_filtro_Marca["MARCA"]=df_filtro_Marca["MARCA"].replace("NOJA Power", "NOJA")
+            df_filtro_Marca["MARCA"]=df_filtro_Marca["MARCA"].replace("Entec", "ENTEC")
+
                                                                                                                 #El "\" indica un salto.
             condicion_filtrar=((df_filtro_Marca["MARCA"] == "S&C") & (df_filtro_Marca["SECC. GIS NUEVO"] == "--")) | \
                 ((df_filtro_Marca['MARCA'] == 'ABB') & (df_filtro_Marca['Controlador'] != "PCD2000R")) | \
@@ -278,6 +280,7 @@ else:
             
             df_filtro_Marca = df_filtro_Marca[~condicion_filtrar] # Eliminar los registros que cumplan con la condición.
             df_filtro_Marca = df_filtro_Marca.reset_index(drop=True) # Dataframe filtrado, que se usará para los siguientes filtros.
+            st.write(df_filtro_Marca)
                     # Conteo
             conteos_marcas = pd.DataFrame({'MARCA': df_filtro_Marca['MARCA'].value_counts().index, 'Total': df_filtro_Marca['MARCA'].value_counts().values})
             si_rpta = df_filtro_Marca.groupby('MARCA')['Rpta actual'].apply(lambda x: (x == 'Si').sum()).reset_index(name='si_rpta')
