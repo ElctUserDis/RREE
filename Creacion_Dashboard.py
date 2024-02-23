@@ -811,6 +811,7 @@ else:
             st.markdown(hide_st_style, unsafe_allow_html= True)
 
         except Exception as e:
+            st.write(e)
             st.error("...(Seleccionar los filtros)")
 
     elif selected_tab == lista_pestañas[2]:
