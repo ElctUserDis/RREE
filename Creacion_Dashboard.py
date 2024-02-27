@@ -280,7 +280,6 @@ else:
             
             df_filtro_Marca = df_filtro_Marca[~condicion_filtrar] # Eliminar los registros que cumplan con la condición.
             df_filtro_Marca = df_filtro_Marca.reset_index(drop=True) # Dataframe filtrado, que se usará para los siguientes filtros.
-            st.write(df_filtro_Marca)
                     # Conteo
             conteos_marcas = pd.DataFrame({'MARCA': df_filtro_Marca['MARCA'].value_counts().index, 'Total': df_filtro_Marca['MARCA'].value_counts().values})
             si_rpta = df_filtro_Marca.groupby('MARCA')['Rpta actual'].apply(lambda x: (x == 'Si').sum()).reset_index(name='si_rpta')
