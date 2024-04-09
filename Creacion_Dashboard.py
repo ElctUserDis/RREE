@@ -280,6 +280,7 @@ else:
             
             df_filtro_Marca = df_filtro_Marca[~condicion_filtrar] # Eliminar los registros que cumplan con la condición.
             df_filtro_Marca = df_filtro_Marca.reset_index(drop=True) # Dataframe filtrado, que se usará para los siguientes filtros.
+            download_excel(df_filtro_Marca,"📥 Download Data","Recloser.xlsx") # Descargar en formato (xlsx)
                     # Conteo
             conteos_marcas = pd.DataFrame({'MARCA': df_filtro_Marca['MARCA'].value_counts().index, 'Total': df_filtro_Marca['MARCA'].value_counts().values})
             si_rpta = df_filtro_Marca.groupby('MARCA')['Rpta actual'].apply(lambda x: (x == 'Si').sum()).reset_index(name='si_rpta')
@@ -836,7 +837,7 @@ else:
                     item_inicio=ii
 
             #4.3° Fecha final
-            hoja_excel_final = st.sidebar.selectbox("Fecha final:", sheet_names[item_inicio:])# Usamos el widget selectbox para seleccionar una hoja
+            hoja_excel_final = st.sidebar.selectbox("Fecha final:", sheet_names[item_inicio:][::-1])# Usamos el widget selectbox para seleccionar una hoja
             for ii,vv in enumerate(sheet_names):
                 if vv==hoja_excel_final:
                     item_final=ii
@@ -857,20 +858,20 @@ else:
                 # 5.1.2° Filtro de Alimentador (AMT)
             st.sidebar.header("Filtro del Alimentador (AMT):")
                     # Forma 01: Ingresar desde el teclado
-            amt=st.sidebar.text_input("Escriba el alimentador (AMT):", "")
+            # amt=st.sidebar.text_input("Escriba el alimentador (AMT):", "")
 
                     # Forma 02: Ingresar desde el teclado o seleccionar.
-            # amt_options = df[
-            #     (df['DEPARTAMENTO'].isin(dpto)) &
-            #     (df['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
-            #     (df['SUBESTACION'].isin(se)) &
-            #     (df['OPERADOR INSTALADO'].isin(operador))
-            # ]['AMT'].unique()
+            amt_options = df[
+                (df['DEPARTAMENTO'].isin(dpto)) &
+                (df['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
+                (df['SUBESTACION'].isin(se)) &
+                (df['OPERADOR INSTALADO'].isin(operador))
+            ]['AMT'].unique()
             
-            # lista_amt_options=sorted(amt_options.tolist())
-            # amt_input = st.sidebar.text_input("Escriba el alimentador (AMT):", "")
-            # filtered_amt_options = [option for option in lista_amt_options if amt_input.lower() in option.lower()]
-            # amt = st.sidebar.selectbox("Seleccione el alimentador (AMT):", options=filtered_amt_options, index=0 if filtered_amt_options else None)
+            lista_amt_options=sorted(amt_options.tolist())
+            amt_input = st.sidebar.text_input("Escriba el alimentador (AMT):", "")
+            filtered_amt_options = [option for option in lista_amt_options if amt_input.lower() in option.lower()]
+            amt = st.sidebar.selectbox("Seleccione el alimentador (AMT):", options=filtered_amt_options, index=0 if filtered_amt_options else None)
 
                 # 5.1.3° Filtro del recloser por código: "SCADA" o "GIS"
             st.sidebar.markdown("----")
@@ -1120,7 +1121,7 @@ else:
                     item_inicio=ii
 
             #4.3° Fecha final
-            hoja_excel_final = st.sidebar.selectbox("Fecha final:", sheet_names[item_inicio:])# Usamos el widget selectbox para seleccionar una hoja
+            hoja_excel_final = st.sidebar.selectbox("Fecha final:", sheet_names[item_inicio:][::-1])# Usamos el widget selectbox para seleccionar una hoja
             for ii,vv in enumerate(sheet_names):
                 if vv==hoja_excel_final:
                     item_final=ii
