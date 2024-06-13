@@ -37,7 +37,7 @@ name_ciudades="Ciudades.xlsx" # Coordenadas de los departamentos.
 imagen_path = "imagen.jpg"  # Ajusta la ruta de la imagen según sea necesario
 
     # 2.2° PESTAÑA (01)
-lista_recloser=["NOJA","NOJA Power","Schneider","JinkWang","Entec","ENTEC","S&C","ABB","SEL"] # Recloser instalados (para el conteo).
+lista_recloser=["NOJA","NOJA Power","SCHNEIDER","JINKWANG","ENTEC","S&C","ABB","SEL"] # Recloser instalados (para el conteo).
 # URL de Google Maps
 url_input = "https://www.google.com/maps/d/u/0/viewer?mid=1jDCOXn4Su3ub1LHtoZyHbpffU_0ZwdA&ll=-11.344651744765466%2C-73.25285471281072&z=7"
 
@@ -108,9 +108,8 @@ else:
 
         sheet_names = []
         for sheet in workbook.sheetnames:# Recorre todos los nombres del libro
-            if sheet != "SELECTORES":
-                if sheet != "PLANTILLA":
-                    sheet_names.append(sheet) # Lista que almacenará los nombres de las hojas
+            if not(sheet in ["SELECTORES","PLANTILLA","BDGeneral"]):
+                sheet_names.append(sheet) # Lista que almacenará los nombres de las hojas
         workbook.close()# Cierra el libro
 
         # Selección de fecha
@@ -119,13 +118,28 @@ else:
             selected_date = st.sidebar.date_input(f"Selecciona una fecha a partir de {sheet_names[0]}:", min_value=min_date)
             hoja_excel = selected_date.strftime("%d-%m-%Y")
 
+#!!!!!!!!!!!!!!!!11
             # 4° Lectura de los datos de la hoja excel seleccionada.
             df = pd.read_excel(name_excel,sheet_name = hoja_excel)
+            
+                #4.1° Filtrar los datos necesarios.
+            df_filtro_Marca=df[df['MARCA'].isin(lista_recloser)]
+            df_filtro_Marca["MARCA"]=df_filtro_Marca["MARCA"].replace("NOJA Power", "NOJA")
+            df_filtro_Marca["MARCA"]=df_filtro_Marca["MARCA"].replace("Entec", "ENTEC")
+                                                                                                                #El "\" indica un salto.
+            condicion_filtrar= ~((df_filtro_Marca["MARCA"] == "S&C") & (df_filtro_Marca["SECC. GIS NUEVO"] == "--")) | \
+                ~((df_filtro_Marca['MARCA'] == 'ABB') & (df_filtro_Marca['Controlador'] != "PCD2000R")) | \
+                ~((df_filtro_Marca['MARCA'] == 'SEL') & (df_filtro_Marca['Controlador'] != "SEL-351R"))
+            
+            df_filtrado = df_filtro_Marca[condicion_filtrar]
+            df_filtro_Marca = df_filtro_Marca.reset_index(drop=True) # Dataframe filtrado, que se usará para los siguientes filtros.
+
         except Exception as e:
-            st.error("No hay registro para la fecha seleccionada, seleccione otra fecha")
+            st.error("No hay registro para la fecha seleccionada, seleccione otra fecha.")
             sys.exit() # En caso de existir un error. Terminar de ejecutar el programa.
       
         try:
+#!!!!!!!!!!!!!!!!22
         # 5° Creación de tablas
             # 5.1 Creación de filtros
             st.sidebar.markdown("---")
@@ -136,18 +150,18 @@ else:
                                             """) #Casilla de verificación para seleccionar todos los filtros.
             if select_all:
                 st.sidebar.warning('Si desea filtrar, entonces deberá de desmarcar la casilla de verificación.')
-                dpto = df['DEPARTAMENTO'].unique()
-                unidad_negocio = df['UNIDAD DE NEGOCIO'].unique()
-                se = df['SUBESTACION'].unique()
-                operador = df['OPERADOR INSTALADO'].unique()
-                amt = df['AMT'].unique()
+                dpto = df_filtrado['DEPARTAMENTO'].unique()
+                unidad_negocio = df_filtrado['UNIDAD DE NEGOCIO'].unique()
+                se = df_filtrado['SUBESTACION'].unique()
+                operador = df_filtrado['OPERADOR INSTALADO'].unique()
+                amt = df_filtrado['AMT'].unique()
 
             else:
                 # Filtro de Departamento
                 st.sidebar.markdown("---")
                 st.sidebar.header("Departamento:")
                 select_all_dpto = st.sidebar.checkbox("Marcar todos los DPTOS.") # Casilla de verificación para seleccionar todos los filtros.
-                lista_dpto=sorted(df['DEPARTAMENTO'].unique().tolist()) # Lista que tiene a las opciones ordenadas
+                lista_dpto=sorted(df_filtrado['DEPARTAMENTO'].unique().tolist()) # Lista que tiene a las opciones ordenadas
 
                 if select_all_dpto:
                     st.sidebar.warning("Seleccionaste todos los DPTOS.")
@@ -162,7 +176,7 @@ else:
                 # Filtro de Unidad de Negocio (se habilita en función de la selección de Departamento)
                 st.sidebar.header("Unidad de Negocio:")
                 select_all_UN= st.sidebar.checkbox("Marcar todas las UN.")#Casilla de verificación para seleccionar todos los filtros.
-                un_options = df[df['DEPARTAMENTO'].isin(dpto)]['UNIDAD DE NEGOCIO'].unique() # Filtro las UN por los dptos seleccionados.
+                un_options = df_filtrado[df_filtrado['DEPARTAMENTO'].isin(dpto)]['UNIDAD DE NEGOCIO'].unique() # Filtro las UN por los dptos seleccionados.
                 lista_UN_options=sorted(un_options.tolist())
 
                 if select_all_UN:
@@ -178,9 +192,9 @@ else:
                 # Filtro de Subestación (se habilita en función de la selección de Unidad de Negocio)
                 st.sidebar.header("Subestación Eléctrica")
                 select_all_SE= st.sidebar.checkbox("Marcar todas las SE.")#Casilla de verificación para seleccionar todos los filtros.
-                se_options = df[
-                    (df['DEPARTAMENTO'].isin(dpto)) &
-                    (df['UNIDAD DE NEGOCIO'].isin(unidad_negocio))
+                se_options = df_filtrado[
+                    (df_filtrado['DEPARTAMENTO'].isin(dpto)) &
+                    (df_filtrado['UNIDAD DE NEGOCIO'].isin(unidad_negocio))
                     ]['SUBESTACION'].unique()
                 lista_se_options=sorted(se_options.tolist())
 
@@ -195,29 +209,29 @@ else:
                     )
 
                 # Filtro de Operador (se habilita en función de la selección de Subestación)
-                operador_options = df[
-                    (df['DEPARTAMENTO'].isin(dpto)) &
-                    (df['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
-                    (df['SUBESTACION'].isin(se))
+                operador_options = df_filtrado[
+                    (df_filtrado['DEPARTAMENTO'].isin(dpto)) &
+                    (df_filtrado['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
+                    (df_filtrado['SUBESTACION'].isin(se))
                 ]['OPERADOR INSTALADO'].unique()
                 operador=sorted(operador_options.tolist())
                     
                 # Filtro de Alimentador (AMT) - Filtrado en base a todas las selecciones anteriores
-                amt_options = df[
-                    (df['DEPARTAMENTO'].isin(dpto)) &
-                    (df['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
-                    (df['SUBESTACION'].isin(se)) &
-                    (df['OPERADOR INSTALADO'].isin(operador))
+                amt_options = df_filtrado[
+                    (df_filtrado['DEPARTAMENTO'].isin(dpto)) &
+                    (df_filtrado['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
+                    (df_filtrado['SUBESTACION'].isin(se)) &
+                    (df_filtrado['OPERADOR INSTALADO'].isin(operador))
                 ]['AMT'].unique()
                 amt=sorted(amt_options.tolist())
                 
             # 5.2 Filtra el DataFrame en función de las selecciones:
-            filtered_df = df[
-                (df['DEPARTAMENTO'].isin(dpto)) &
-                (df['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
-                (df['SUBESTACION'].isin(se)) &
-                (df['OPERADOR INSTALADO'].isin(operador)) &
-                (df['AMT'].isin(amt))
+            filtered_df = df_filtrado[
+                (df_filtrado['DEPARTAMENTO'].isin(dpto)) &
+                (df_filtrado['UNIDAD DE NEGOCIO'].isin(unidad_negocio)) &
+                (df_filtrado['SUBESTACION'].isin(se)) &
+                (df_filtrado['OPERADOR INSTALADO'].isin(operador)) &
+                (df_filtrado['AMT'].isin(amt))
             ]
 
             # 5.3 Muestra la tabla con los datos filtrados
@@ -633,32 +647,33 @@ else:
 # GRÁFICA SUBESTACIONES ----------------------------------------------------------------------------------------------------------------------------------------------------------
             # st.markdown(f"<p style='font-size: 22px; text-align: Center'>Recloser por SUBESTACION</p>", unsafe_allow_html=True)
 
-            n_fig_AMT=math.ceil(len(conteos_marcas_SE)/9) # Graficará 9 subestaciones por figura
+            # Determinar el arreglo de las sub-figuras:
+            n_fig_AMT=math.ceil(len(conteos_marcas_SE)/9) # Cantidad de subfiguras que tendran 9 SE c/u: Ejm: math.ceil(10/9)=2
             n_row_AMT=1 # Número de filas "SE"
 
-            if n_fig_AMT>4:
-                n_row_AMT=2
+            if n_fig_AMT>4: # Se tendrá un máximo de 4 columnas
+                n_row_AMT=2 # Se tendrá un máximo de 2 filas
 
             n_column_AMT=n_fig_AMT//n_row_AMT # Cociente = n° de columnas
 
+            # Dimensiones de cada gráfica:
             Ancho_AMT,height_AMT=8000,8000 # Dimensiones del ancho y la altura de los subplots de la figura: recloser por alimentador.
             Tamaño_FIG_SE=400
 
-            # Dimensiones de cada gráfica
             l_column_widths_AMT=[Ancho_AMT]*n_column_AMT
             l_row_heights_AMT=[height_AMT]*n_row_AMT
             # Agregar los gráficos a cada subsubplot
             total_filas_grouped_aux = len(conteos_marcas_SE)
-            division_entera, residuo = divmod(total_filas_grouped_aux, n_fig_AMT)    
+            cociente, residuo = divmod(total_filas_grouped_aux, n_fig_AMT)    
             #Obtener el nuevo residuo cuando el cociente se incrementa en 1
-            division_entera+=1
-            residuo=total_filas_grouped_aux-division_entera*n_fig_AMT
+            cociente+=1
+            residuo=total_filas_grouped_aux-cociente*n_fig_AMT
             #Creación de la lista donde se mostrarán las figuras
-            lista_valores = [division_entera] * n_fig_AMT
+            lista_valores = [cociente] * n_fig_AMT
             lista_valores[-1] += residuo
 
 
-            #Creación de la gráfica
+            # Creación de la gráfica:
             indice_inicial = 0 # Variable que almacenará el última fila del grupo.
             figTOTAL  = sp.make_subplots( # Objeto que almacenará a las gráficas creadas por los plot
                                         rows=n_row_AMT,cols=n_column_AMT,
@@ -698,7 +713,7 @@ else:
                         legendgroup='Recloser con comunicación'
                     )
                 ]
-                fig1 = go.Figure(data=traces,layout=go.Layout(barmode='group')) # Agregar el grupo de cada tazo en la "fig1".
+                fig1 = go.Figure(data=traces,layout=go.Layout(barmode='group')) # Agregar el grupo de cada trazo en la "fig1".
                 fig1.update_traces(
                                     offset=-0.43, # Aumentar el alto de las barras.
                                     selector=dict(type='bar'),# Superponer las barras
@@ -732,6 +747,7 @@ else:
             
             figTOTAL.update_traces(showlegend=True)# Mostrar la leyenda (Los grupos creados)
 
+            # MOSTRAR FIGURAS:
             # st.plotly_chart(figTOTAL, use_container_width=True) # Graficar en streamlit
             
             # with st.expander("UN_ViewData"):
@@ -814,6 +830,7 @@ else:
             st.markdown(hide_st_style, unsafe_allow_html= True)
 
         except Exception as e:
+            st.write(e)
             st.error("...(Seleccionar los filtros)")
 
     elif selected_tab == lista_pestañas[2]:
@@ -826,9 +843,8 @@ else:
 
             sheet_names = []# Lista que almacenará los nombres de las hojas
             for sheet in workbook.sheetnames:# Recorre todas las hojas del libro
-                if sheet != "SELECTORES":
-                    if sheet != "PLANTILLA":
-                        sheet_names.append(sheet)
+                if not(sheet in ["SELECTORES","PLANTILLA","BDGeneral"]):
+                    sheet_names.append(sheet) # Lista que almacenará los nombres de las hojas
 
             #4.2° Fecha de inicio
             hoja_excel = st.sidebar.selectbox("Fecha inicio:", sheet_names) # Usamos el widget selectbox para seleccionar una hoja
@@ -1110,9 +1126,8 @@ else:
 
             sheet_names = []# Lista que almacenará los nombres de las hojas
             for sheet in workbook.sheetnames:# Recorre todas las hojas del libro
-                if sheet != "SELECTORES":
-                    if sheet != "PLANTILLA":
-                        sheet_names.append(sheet)
+                if not(sheet in ["SELECTORES","PLANTILLA","BDGeneral"]):
+                    sheet_names.append(sheet) # Lista que almacenará los nombres de las hojas
 
             #4.2° Fecha de inicio
             hoja_excel = st.sidebar.selectbox("Fecha inicio:", sheet_names) # Usamos el widget selectbox para seleccionar una hoja
